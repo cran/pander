@@ -188,32 +188,32 @@ eval.msgs <- function(src, env = NULL, showInvisible = FALSE, graph.unify = eval
 
                     ## margin
                     if (panderOptions('graph.nomargin')) {
-                        rv$options$plot.margin  <- grid::unit(c(0.1, 0.1, 0.1, 0), "lines")
+                        rv$theme$plot.margin  <- grid::unit(c(0.1, 0.1, 0.1, 0), "lines")
                     }
 
                     ## font family
-                    rv$options$plot.title       <- ggplot2::theme_text(colour = fc, family = ff, face = "bold", size = fs * 1.2)
-                    rv$options$axis.text.x      <- rv$options$axis.text.y <- rv$options$legend.text <- ggplot2::theme_text(colour = fc, family = ff, face = 'plain', size = fs * 0.8)
-                    rv$options$axis.title.x     <- ggplot2::theme_text(colour = fc, family = ff, face = 'plain', size = fs)
-                    rv$options$strip.text.x     <- ggplot2::theme_text(colour = fc, family = ff, face = 'plain', size = fs)
-                    rv$options$axis.title.y     <- ggplot2::theme_text(colour = fc, family = ff, face = 'plain', size = fs, angle = 90)
-                    rv$options$legend.title     <- ggplot2::theme_text(colour = fc, family = ff, face = 'italic', size = fs)
-                    rv$options$strip.text.y     <- ggplot2::theme_text(colour = fc, family = ff, face = 'plain', size = fs, angle = -90)
+                    rv$theme$plot.title       <- ggplot2::element_text(colour = fc, family = ff, face = "bold", size = fs * 1.2)
+                    rv$theme$axis.text.x      <- rv$theme$axis.text.y <- rv$theme$legend.text <- ggplot2::element_text(colour = fc, family = ff, face = 'plain', size = fs * 0.8)
+                    rv$theme$axis.title.x     <- ggplot2::element_text(colour = fc, family = ff, face = 'plain', size = fs)
+                    rv$theme$strip.text.x     <- ggplot2::element_text(colour = fc, family = ff, face = 'plain', size = fs)
+                    rv$theme$axis.title.y     <- ggplot2::element_text(colour = fc, family = ff, face = 'plain', size = fs, angle = 90)
+                    rv$theme$legend.title     <- ggplot2::element_text(colour = fc, family = ff, face = 'italic', size = fs)
+                    rv$theme$strip.text.y     <- ggplot2::element_text(colour = fc, family = ff, face = 'plain', size = fs, angle = -90)
 
                     ## boxes
                     if (!panderOptions('graph.boxes')) {
-                        rv$options$legend.key       <- rv$options$strip.background <- ggplot2::theme_rect(col = 'transparent', fill = 'transparent')
-                        rv$options$panel.border     <- ggplot2::theme_rect(fill = NA, colour = tc)
-                        rv$options$panel.background <- ggplot2::theme_rect(fill = pc, colour = tc)
+                        rv$theme$legend.key       <- rv$theme$strip.background <- ggplot2::element_rect(colour = 'transparent', fill = 'transparent')
+                        rv$theme$panel.border     <- ggplot2::element_rect(fill = NA, colour = tc)
+                        rv$theme$panel.background <- ggplot2::element_rect(fill = pc, colour = tc)
                     } else {
-                        rv$options$legend.key       <- rv$options$strip.background <- ggplot2::theme_rect(col = gc, fill = 'transparent')
-                        rv$options$panel.border     <- ggplot2::theme_rect(fill = NA, colour = gc)
-                        rv$options$panel.background <- ggplot2::theme_rect(fill = pc, colour = gc)
+                        rv$theme$legend.key       <- rv$theme$strip.background <- ggplot2::element_rect(col = gc, fill = 'transparent')
+                        rv$theme$panel.border     <- ggplot2::element_rect(fill = NA, colour = gc)
+                        rv$theme$panel.background <- ggplot2::element_rect(fill = pc, colour = gc)
                     }
 
                     ## colors
-                    rv$options$plot.background  <- ggplot2::theme_rect(fill = bc, colour = NA)
-                    rv$options$axis.ticks       <- ggplot2::theme_segment(colour = gc, size = 0.2)
+                    rv$theme$plot.background  <- ggplot2::element_rect(fill = bc, colour = NA)
+                    rv$theme$axis.ticks       <- ggplot2::element_line(colour = gc, size = 0.2)
                     ## point shape still has to be updated
                     for (i in length(rv$layers))
                         if (rv$layers[[i]]$geom$objname %in% c('point')) {
@@ -221,24 +221,24 @@ eval.msgs <- function(src, env = NULL, showInvisible = FALSE, graph.unify = eval
                             rv$layers[[i]]$geom_params$shape  <- gs
                         }
                     ## geom colors
-                    if (is.null(rv$options$labels$colour) & is.null(rv$options$labels$fill)) {
+                    if (is.null(rv$labels$colour) & is.null(rv$labels$fill)) {
 
                         ## update layers with one color
                         ## this is an ugly hack but `update_geom_defaults` is not reversible :(
-                        for (i in length(rv$layers)) {
+                        for (i in 1:length(rv$layers)) {
                             if (rv$layers[[i]]$geom$objname %in% c('histogram', 'bar')) {
-                                rv$layers[[i]]$geom_params$fill   <- cb
+                                rv$layers[[i]]$geom_params$fill   <- cs[i]
                                 rv$layers[[i]]$geom_params$colour <- tc
                             } else {
                                 if (rv$layers[[i]]$geom$objname %in% c('boxplot')) {
-                                    rv$layers[[i]]$geom_params$fill   <- cb
+                                    rv$layers[[i]]$geom_params$fill   <- cs[i]
                                     rv$layers[[i]]$geom_params$colour <- 'black'
                                 } else {
                                     if (rv$layers[[i]]$geom$objname %in% c('point')) {
                                         rv$layers[[i]]$geom_params$fill   <- tc
-                                        rv$layers[[i]]$geom_params$colour <- cb
+                                        rv$layers[[i]]$geom_params$colour <- cs[i]
                                     } else
-                                        rv$layers[[i]]$geom_params$colour <- cb
+                                        rv$layers[[i]]$geom_params$colour <- cs[i]
                                 }
                             }
                         }
@@ -246,7 +246,7 @@ eval.msgs <- function(src, env = NULL, showInvisible = FALSE, graph.unify = eval
                     } else {
 
                         ## we have a possible color scale (only dealing with discrete scales)
-                        if (is.null(rv$options$labels$colour)) {
+                        if (is.null(rv$labels$colour)) {
 
                             if (length(rv$scales$scales) == 0) {
                                 rv <- rv + ggplot2::scale_fill_manual(values = cs)
@@ -275,32 +275,32 @@ eval.msgs <- function(src, env = NULL, showInvisible = FALSE, graph.unify = eval
 
                     ## grid
                     if (!panderOptions('graph.grid'))
-                        rv$options$panel.grid.minor <- rv$options$panel.grid.major <- ggplot2::theme_blank()
+                        rv$theme$panel.grid.minor <- rv$theme$panel.grid.major <- ggplot2::element_blank()
                     else
                         if (!panderOptions('graph.grid.minor')) {
-                            rv$options$panel.grid.major <- ggplot2::theme_line(colour = gc, size = 0.2, linetype = gl)
-                            rv$options$panel.grid.minor <- ggplot2::theme_blank()
+                            rv$theme$panel.grid.major <- ggplot2::element_line(colour = gc, size = 0.2, linetype = gl)
+                            rv$theme$panel.grid.minor <- ggplot2::element_blank()
                         } else {
-                            rv$options$panel.grid.minor <- ggplot2::theme_line(colour = gc, size = 0.1, linetype = gl)
-                            rv$options$panel.grid.major <- ggplot2::theme_line(colour = gc, size = 0.2, linetype = gl)
+                            rv$theme$panel.grid.minor <- ggplot2::element_line(colour = gc, size = 0.1, linetype = gl)
+                            rv$theme$panel.grid.major <- ggplot2::element_line(colour = gc, size = 0.2, linetype = gl)
                         }
 
                     ## axis angle
                     if (aa == 0)
-                        rv$options$axis.text.y <- ggplot2::theme_text(colour = fc, family = ff, face = 'plain', size = fs * 0.8, angle = 90)
+                        rv$theme$axis.text.y <- ggplot2::element_text(colour = fc, family = ff, face = 'plain', size = fs * 0.8, angle = 90)
                     if (aa == 2)
-                        rv$options$axis.text.x <- ggplot2::theme_text(colour = fc, family = ff, face = 'plain', size = fs * 0.8, angle = 90, hjust = 1)
+                        rv$theme$axis.text.x <- ggplot2::element_text(colour = fc, family = ff, face = 'plain', size = fs * 0.8, angle = 90, hjust = 1)
                     if (aa == 3) {
-                        rv$options$axis.text.y <- ggplot2::theme_text(colour = fc, family = ff, face = 'plain', size = fs * 0.8, angle = 90)
-                        rv$options$axis.text.x <- ggplot2::theme_text(colour = fc, family = ff, face = 'plain', size = fs * 0.8, angle = 90, hjust = 1)
+                        rv$theme$axis.text.y <- ggplot2::element_text(colour = fc, family = ff, face = 'plain', size = fs * 0.8, angle = 90)
+                        rv$theme$axis.text.x <- ggplot2::element_text(colour = fc, family = ff, face = 'plain', size = fs * 0.8, angle = 90, hjust = 1)
                     }
 
                     ## legend
-                    if (!is.null(rv$options$legend.position)) {
-                        if (rv$options$legend.position != 'none')
-                            rv$options$legend.position <- panderOptions('graph.legend.position')
+                    if (!is.null(rv$theme$legend.position)) {
+                        if (rv$theme$legend.position != 'none')
+                            rv$theme$legend.position <- panderOptions('graph.legend.position')
                     } else
-                        rv$options$legend.position <- panderOptions('graph.legend.position')
+                        rv$theme$legend.position <- panderOptions('graph.legend.position')
 
                 }
 
@@ -411,7 +411,7 @@ eval.msgs <- function(src, env = NULL, showInvisible = FALSE, graph.unify = eval
 #' @param output a character vector of required returned values. This might be useful if you are only interested in the \code{result}, and do not want to save/see e.g. \code{messages} or \code{print}ed \code{output}. See examples below.
 #' @param env environment where evaluation takes place. If not set (by default), a new temporary environment is created.
 #' @param graph.unify should \code{evals} try to unify the style of (\code{base}, \code{lattice} and \code{ggplot2}) plots? If set to \code{TRUE}, some \code{panderOptions()} would apply. By default this is disabled not to freak out useRs :)
-#' @param graph.name set the file name of saved plots which is \code{\link{tempfile}} by default. A simple character string might be provided where \code{\%d} would be replaced by the index of the generating \code{txt} source, \code{\%n} with an incremented integer in \code{graph.dir} with similar file names and \code{\%t} by some unique random characters. A function's name to be \code{eval}uated can be passed here too.
+#' @param graph.name set the file name of saved plots which is \code{\link{tempfile}} by default. A simple character string might be provided where \code{\%d} would be replaced by the index of the generating \code{txt} source, \code{\%n} with an incremented integer in \code{graph.dir} with similar file names and \code{\%t} by some unique random characters. While running in \code{\link{Pandoc.brew}} other indices could be triggered like \code{\%i} and \code{\%I}.
 #' @param graph.dir path to a directory where to place generated images. If the directory does not exist, \code{evals} try to create that. Default set to \code{plots} in current working directory.
 #' @param graph.output set the required file format of saved plots. Currently it could be any of  \code{grDevices}': \code{png}, \code{bmp}, \code{jpeg}, \code{jpg}, \code{tiff}, \code{svg} or \code{pdf}.
 #' @param width width of generated plot in pixels for even vector formats
@@ -593,6 +593,7 @@ evals <- function(txt, parse = TRUE, cache = TRUE, cache.mode = c('environment',
 
     if (missing(txt))
         stop('No R code provided to evaluate!')
+    txt.original <- paste(txt, collapse = '\n')
 
     ## override missing parameters with options
     mc <- match.call()
@@ -613,12 +614,23 @@ evals <- function(txt, parse = TRUE, cache = TRUE, cache.mode = c('environment',
         ## skip parsing on syntax error and disable cache
         if (inherits(txt.parsed, 'error'))
             cache <- FALSE
+
         else {
 
             txt <- sapply(txt.parsed, function(x) paste(deparse(x), collapse = '\n'))
 
+            ## return NULL on missing R code (e.g. comments)
             if (length(txt) == 0)
-                stop('No R code provided to evaluate!')
+                return(list(structure(list(src      = txt.original,
+                                           result   = NULL,
+                                           output   = NULL,
+                                           type     = NULL,
+                                           msg      = list(
+                                               messages = NULL,
+                                               warnings = NULL,
+                                               errors   = NULL),
+                                           stdout   = NULL
+                                           ), 'class' = 'evals')))
 
             ## (re)merge lines on demand (based on `+` at the beginning of line)
             txt.sep <- c(which(!grepl('^\\+', txt)), length(txt)+1)
@@ -670,7 +682,17 @@ evals <- function(txt, parse = TRUE, cache = TRUE, cache.mode = c('environment',
         ## get image file name
         `%d` <<- `%d` + 1
         file.name <- gsub('%d', `%d`, graph.name, fixed = TRUE)
+
+        ## chunk ID
+        if (!is.null(debug$chunkID))
+            file.name <- gsub('%i', debug$chunkID, file.name, fixed = TRUE)
+        if (!is.null(debug$cmdID)) {
+            assign('cmdID', debug$cmdID + 1, envir = debug)
+            file.name <- gsub('%I', debug$cmdID, file.name, fixed = TRUE)
+        }
         file <- sprintf('%s.%s', file.name, graph.output)
+
+        ## tempfile
         if (grepl('%t', graph.name)) {
             if (length(strsplit(sprintf('placeholder%splaceholder', file.name), '%t')[[1]]) > 2)
                 stop('File name contains more then 1 "%t"!')
@@ -681,13 +703,15 @@ evals <- function(txt, parse = TRUE, cache = TRUE, cache.mode = c('environment',
             file <- file.path(gsub('\\', '/', graph.dir, fixed = TRUE), file)
             file.name <- file.path(gsub('\\', '/', graph.dir, fixed = TRUE), file.name)
         }
+
+        ## similar files counter
         if (grepl('%n', file.name)) {
             if (length(strsplit(sprintf('placeholder%splaceholder', file.name), '%n')[[1]]) > 2)
                 stop('File name contains more then 1 "%n"!')
-            similar.files <- list.files(graph.dir, pattern = sprintf('^%s\\.(jpeg|tiff|png|svg|bmp)$', gsub('%t', '[a-z0-9]*', gsub('%d|%n', '[[:digit:]]*', basename(file.name)))))
+            similar.files <- list.files(graph.dir, pattern = sprintf('^%s\\.(jpeg|tiff|png|svg|bmp)$', gsub('%t', '[a-z0-9]*', gsub('%d|%n|%i', '[[:digit:]]*', basename(file.name)))))
             if (length(similar.files) > 0) {
                 similar.files <- sub('\\.(jpeg|tiff|png|svg|bmp)$', '', similar.files)
-                rep <- gsub('%t', '[a-z0-9]*', gsub('%d', '[[:digit:]]*', strsplit(basename(file.name), '%n')[[1]]))
+                rep <- gsub('%t', '[a-z0-9]*', gsub('%d|%i', '[[:digit:]]*', strsplit(basename(file.name), '%n')[[1]]))
                 `%n` <- max(as.numeric(gsub(paste(rep, collapse = '|'), '', similar.files))) + 1
             } else
                 `%n` <- 1
@@ -735,7 +759,7 @@ evals <- function(txt, parse = TRUE, cache = TRUE, cache.mode = c('environment',
             }
 
             ## get the hash of the call based on the hash of all `names`
-            cached <- digest(list(call = getCallParts(parse(text = src)), storage = digest(pander:::storage)), 'sha1')
+            cached <- digest(list(call = getCallParts(parse(text = src)), storage = digest(list(storage, panderOptions(), evalsOptions()), 'sha1')), 'sha1')
 
             if (cache.mode == 'disk') {
 
@@ -814,12 +838,16 @@ evals <- function(txt, parse = TRUE, cache = TRUE, cache.mode = c('environment',
         clear.devs()
 
         ## init (potential) img file
+        if (evalsOptions('graph.unify'))
+            pbg <- panderOptions('graph.background')
+        else
+            pbg <- 'white'
         if (graph.output %in% c('bmp', 'jpeg', 'png', 'tiff'))
-            do.call(graph.output, list(file, width = width, height = height, res = res, bg = panderOptions('graph.background'), ...))
+            do.call(graph.output, list(file, width = width, height = height, res = res, bg = pbg, ...))
         if (graph.output == 'svg')
-            do.call(graph.output, list(file, width = width/res, height = height/res, bg = panderOptions('graph.background'), ...)) # TODO: font-family?
+            do.call(graph.output, list(file, width = width/res, height = height/res, bg = pbg, ...)) # TODO: font-family?
         if (graph.output == 'pdf')
-            do.call('cairo_pdf', list(file, width = width/res, height = height/res, bg = panderOptions('graph.background'),...)) # TODO: font-family?
+            do.call('cairo_pdf', list(file, width = width/res, height = height/res, bg = pbg,...)) # TODO: font-family?
 
         ## start recordPlot
         dev.control(displaylist = "enable")
@@ -895,13 +923,13 @@ evals <- function(txt, parse = TRUE, cache = TRUE, cache.mode = c('environment',
 
                 ## initialize high resolution image file
                 if (graph.output %in% c('bmp', 'jpeg', 'png', 'tiff')) {
-                    do.call(graph.output, list(file.hi.res, width = hi.res.width, height = hi.res.height, res = hi.res.res, bg = panderOptions('graph.background'), ...))
+                    do.call(graph.output, list(file.hi.res, width = hi.res.width, height = hi.res.height, res = hi.res.res, bg = pbg, ...))
                 } else {
 
                     if (.Platform$OS.type == 'unix')    # a symlink would be fine for vector formats on a unix-like OS
                         file.symlink(file, file.hi.res)
                     else                                # we have no option to do so on Windows (to be backward compatible)
-                        do.call(graph.output, list(file.hi.res, width = hi.res.width/hi.res.res, height = hi.res.height/hi.res.res, bg = panderOptions('graph.background'), ...)) # TODO: font-family?
+                        do.call(graph.output, list(file.hi.res, width = hi.res.width/hi.res.res, height = hi.res.height/hi.res.res, bg = pbg, ...)) # TODO: font-family?
                 }
 
                 ## render high resolution image (if needed)
@@ -945,16 +973,16 @@ evals <- function(txt, parse = TRUE, cache = TRUE, cache.mode = c('environment',
             }
 
         ## add captured attributes
-        if (!is.null(pander:::storage$caption) & !is.null(result)) {
+        if (!is.null(storage$caption) & !is.null(result)) {
 
-            attr(result, 'caption') <- pander:::storage$caption
-            assign('caption', NULL , envir = pander:::storage)
+            attr(result, 'caption') <- storage$caption
+            assign('caption', NULL , envir = storage)
 
         }
         ## alignment of tables
-        if (!is.null(pander:::storage$alignment) & !is.null(result)) {
+        if (!is.null(storage$alignment) & !is.null(result)) {
 
-            a <- pander:::storage$alignment
+            a <- storage$alignment
             if (length(dim(result)) == 0) {
                 w <- length(result)
                 n <- NULL
@@ -968,7 +996,7 @@ evals <- function(txt, parse = TRUE, cache = TRUE, cache.mode = c('environment',
                 attr(result, 'alignment') <- rep(a$align, length.out = w)
             else
                 attr(result, 'alignment') <- c(a$row.names, rep(a$align, length.out = w))
-            assign('alignment', NULL , envir = pander:::storage)
+            assign('alignment', NULL , envir = storage)
 
         }
 
@@ -1016,7 +1044,7 @@ evals <- function(txt, parse = TRUE, cache = TRUE, cache.mode = c('environment',
                         save(list = changed, envir = env, file = paste0(cached, '.ENV'))
 
                     ## save plot related files
-                    if (class(result) == 'image') {
+                    if ('image' %in% class(result)) {
                         file.copy(file, paste0(cached, '.', graph.output))
                         if (graph.recordplot)
                             file.copy(sprintf('%s.recordplot', file.name), paste0(cached, '.recordedplot'))
@@ -1033,14 +1061,16 @@ evals <- function(txt, parse = TRUE, cache = TRUE, cache.mode = c('environment',
 
             } else {
 
-                ## save cached result
-                if (as.numeric(proc.time() - timer)[3] > cache.time)
+                if (as.numeric(proc.time() - timer)[3] > cache.time) {
+
+                    ## save cached result
                     assign(cached, res, envir = cached.results)
 
-                ## save the modified R objects of the cached code
-                if (length(changed) > 0)
-                    assign(cached, mget(changed, envir = env), envir = cached.environments)
+                    ## save the modified R objects of the cached code
+                    if (length(changed) > 0)
+                        assign(cached, mget(changed, envir = env), envir = cached.environments)
 
+                }
             }
         }
 

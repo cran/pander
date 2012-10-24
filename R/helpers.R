@@ -55,7 +55,7 @@ repChar <- function(x, n, sep = '')
 #' p(c("Thelma", "Louise"), wrap = "", copula = "&")
 #' ## [1] "Thelma & Louise"
 #' @export
-#' @author Aleksandar Blagotić
+#' @author Aleksandar Blagotic
 #' @references This function was moved from \code{rapport} package: \url{http://rapport-package.info/}.
 p <- function(x, wrap = panderOptions('p.wrap'), sep = panderOptions('p.sep'), copula = panderOptions('p.copula'), limit = Inf){
 
@@ -69,6 +69,7 @@ p <- function(x, wrap = panderOptions('p.wrap'), sep = panderOptions('p.sep'), c
     if (is.numeric(x)) {
         x <- round(x, panderOptions('round'))
         x <- format(x, trim = TRUE, digits = panderOptions('digits'), decimal.mark = panderOptions('decimal.mark'))
+        x <- sub('[\\.,]+0*$', '', x) # removing trailing zeros
     }
 
     if (x.len == 1)
@@ -91,7 +92,7 @@ p <- function(x, wrap = panderOptions('p.wrap'), sep = panderOptions('p.sep'), c
 #' wrap(c("fee", "fi", "foo", "fam"), "_")
 #' }
 #' @export
-#' @author Aleksandar Blagotić
+#' @author Aleksandar Blagotic
 #' @references This function was moved from \code{rapport} package: \url{http://rapport-package.info/}.
 wrap <- function(x, wrap = '"'){
     stopifnot(is.vector(x))
@@ -292,14 +293,23 @@ pandoc.link <- function(...)
 #' @return By default this function outputs (see: \code{cat}) the result. If you would want to catch the result instead, then call the function ending in \code{.return}.
 #' @export
 #' @aliases pandoc.image
+#' @seealso \code{\link{set.caption}}
+#' @note The \code{caption} text is read from an internal buffer which defaults to \code{NULL}. To update that, call \code{link{set.caption}} before.
 #' @examples
 #' pandoc.image('foo.png')
 #' pandoc.image('foo.png', 'Nice image, huh?')
 #' @references John MacFarlane (2012): _Pandoc User's Guide_. \url{http://johnmacfarlane.net/pandoc/README.html}
-pandoc.image.return <- function(img, caption = NULL) {
+pandoc.image.return <- function(img, caption = storage$caption) {
+
     if (is.null(caption))
         caption <- ''
+
+    ## truncating caption buffer if needed
+    if (!is.null(storage$caption))
+        storage$caption <- NULL
+
     sprintf('![%s](%s)', caption, img)
+
 }
 
 #' @export
@@ -393,7 +403,7 @@ pandoc.header <- function(...)
 #' @aliases pandoc.title
 #' @references John MacFarlane (2012): _Pandoc User's Guide_. \url{http://johnmacfarlane.net/pandoc/README.html}
 #' @examples
-#' pandoc.title('Gergely Daróczi', 'Render pandoc in R', '2012-05-16')
+#' pandoc.title('Tom', 'Render pandoc in R', '2012-05-16')
 #' pandoc.title(c('Tom', 'Jerry'), 'Render pandoc in R', '2012-05-16')
 #' pandoc.title('Tom; Jerry', 'Render pandoc in R', '2012-05-16')
 #' pandoc.title('Tom; Jerry', c('Render', 'pandoc', 'in R'), '2012-05-16')
@@ -530,6 +540,8 @@ pandoc.list <- function(...)
 #' @return By default this function outputs (see: \code{cat}) the result. If you would want to catch the result instead, then call the function ending in \code{.return}.
 #' @export
 #' @aliases pandoc.table
+#' @seealso \code{\link{set.caption}}
+#' @note The \code{caption} text is read from an internal buffer which defaults to \code{NULL}. To update that, call \code{link{set.caption}} before.
 #' @references John MacFarlane (2012): _Pandoc User's Guide_. \url{http://johnmacfarlane.net/pandoc/README.html}
 #' @examples
 #' pandoc.table(mtcars)
@@ -571,7 +583,7 @@ pandoc.list <- function(...)
 #' pandoc.table(t, style = "grid", split.cells = 5)
 #' pandoc.table(t, style = "simple")
 #' tryCatch(pandoc.table(t, style = "simple", split.cells = 5), error = function(e) 'Yeah, no newline support in simple tables')
-pandoc.table.return <- function(t, caption = NULL, digits = panderOptions('digits'), decimal.mark = panderOptions('decimal.mark'), round = panderOptions('round'), justify = 'left', style = c('multiline', 'grid', 'simple'), split.tables = panderOptions('table.split.table'), split.cells = panderOptions('table.split.cells')) {
+pandoc.table.return <- function(t, caption = storage$caption, digits = panderOptions('digits'), decimal.mark = panderOptions('decimal.mark'), round = panderOptions('round'), justify = 'left', style = c('multiline', 'grid', 'simple'), split.tables = panderOptions('table.split.table'), split.cells = panderOptions('table.split.cells')) {
 
     ## helper functions
     table.expand <- function(cells, cols.width, justify, sep.cols) {
@@ -598,7 +610,14 @@ pandoc.table.return <- function(t, caption = NULL, digits = panderOptions('digit
     }
     split.large.cells <- function(cells)
         sapply(cells, function(x) {
+
+            ## remove trailing zeros
+            x <- sub('[\\.,]+0*$', '', x)
+
+            ## split
             x <- paste(strwrap(x, width = split.cells), collapse = '\n')
+
+            ## return
             if (x == 'NA')
                 ''
             else
@@ -631,6 +650,8 @@ pandoc.table.return <- function(t, caption = NULL, digits = panderOptions('digit
         if (length(t.n) > 0)
             t[, t.n] <- round(t[, t.n], round)
     }
+
+    ## apply decimal.mark
     t <- format(t, trim = TRUE, digits = digits, decimal.mark = decimal.mark)
 
     ## TODO: adding formatting (emphasis, strong etc.)
@@ -658,6 +679,10 @@ pandoc.table.return <- function(t, caption = NULL, digits = panderOptions('digit
             t.width <- as.numeric(apply(cbind(t.colnames.width, as.numeric(apply(t, 1, nchar))), 1, max))
 
     } else {
+
+        ## checking for empty data frames
+        if (dim(t)[1] == 0)
+            t[1, ] <- NA
 
         t <- apply(t, c(1,2), split.large.cells)
 
@@ -700,14 +725,16 @@ pandoc.table.return <- function(t, caption = NULL, digits = panderOptions('digit
     }
 
     ## split too wide tables
-    if (sum(t.width + 4) > split.tables) {
+    if (sum(t.width + 4) > split.tables & length(t.width) > 1 + (length(t.rownames) != 0)) {
 
-        t.split <- which(cumsum(t.width + 4) > split.tables)[1]
-        t.col.n <- ifelse(length(dim(t)) > 1, ncol(t), length(t))
+        t.split <- max(which(cumsum(t.width + 4) > split.tables)[1] - 1, 1)
+        if (t.split == 1 & length(t.rownames) != 0)
+            t.split <- 2
 
-        ## do not make one column tables
-        if (t.split >= t.col.n)
-            t.split <- t.split - 1
+        #### do not make one column tables
+        ## t.col.n <- ifelse(length(dim(t)) > 1, ncol(t), length(t))
+        ## if (t.split >= t.col.n)
+        ##     t.split <- t.split - 1
 
         ## update caption
         if (!is.null(caption))
@@ -717,16 +744,16 @@ pandoc.table.return <- function(t, caption = NULL, digits = panderOptions('digit
 
         ## split
         if (length(t.rownames) != 0) {
-            t.split <- t.split - 1
             justify <- list(justify[1:t.split], justify[c(1, (t.split + 1):length(t.width))])
+            t.split <- t.split - 1
         } else {
-            justify <- list(justify[1:(t.split - 1)], justify[c(t.split:length(t.width))])
+            justify <- list(justify[1:(t.split)], justify[c((t.split + 1):length(t.width))])
         }
 
         if (length(dim(t)) > 1)
-            res <- list(t[, 1:(t.split-1)], t[, t.split:ncol(t)])
+            res <- list(t[, 1:(t.split), drop = FALSE], t[, (t.split + 1):ncol(t), drop = FALSE])
         else
-            res <- list(t[1:(t.split-1)], t[t.split:length(t)])
+            res <- list(t[1:t.split, drop = FALSE], t[(t.split + 1):length(t), drop = FALSE])
 
         ## recursive call
         res <- paste(pandoc.table.return(res[[1]], caption = caption, digits = digits, decimal.mark = decimal.mark, round = round, justify = justify[[1]], style = style), pandoc.table.return(res[[2]], caption = NULL, digits = digits, decimal.mark = decimal.mark, round = round, justify = justify[[2]], style = style))
@@ -785,7 +812,12 @@ pandoc.table.return <- function(t, caption = NULL, digits = panderOptions('digit
 
         ## (optional) caption
         if (!is.null(caption))
-            res <- sprintf('%sTable: %s\n\n', res, caption)
+            if (caption != '')
+                res <- sprintf('%sTable: %s\n\n', res, caption)
+
+        ## truncating caption buffer if needed
+        if (!is.null(storage$caption))
+            storage$caption <- NULL
 
         return(res)
 
@@ -798,11 +830,11 @@ pandoc.table <- function(...)
 
 #' Adds caption in current block
 #'
-#' This is a helper function to be used \emph{inside brew blocks} to add a caption to the returning image/table.
+#' This is a helper function to add a caption to the returning image/table.
 #' @param x string
 #' @export
 set.caption <- function(x)
-    assign('caption', x , envir = pander:::storage)
+    assign('caption', x , envir = storage)
 
 
 #' Sets alignment for tables
@@ -812,7 +844,7 @@ set.caption <- function(x)
 #' @param row.names string holding the alignment of the (optional) row names
 #' @export
 set.alignment <- function(align = 'centre', row.names = 'left')
-    assign('alignment', list(align = align, row.names = row.names) , envir = pander:::storage)
+    assign('alignment', list(align = align, row.names = row.names) , envir = storage)
 
 
 #' Add significance stars
@@ -834,3 +866,20 @@ add.significance.stars <- function(p) {
         }
     }
 }
+
+
+#' Toggle cache
+#'
+#' This function is just a wrapper around \code{\link{evalsOptions}} to switch pander's cache on or off easily, which might be handy in some brew documents to prevent repetitive strain injury :)
+#' @aliases cache.on
+#' @usage
+#' cache.on()
+#'
+#' cache.off()
+#' @export
+cache.off <- function()
+    evalsOptions('cache', FALSE)
+
+#' @export
+cache.on <- function()
+    evalsOptions('cache', TRUE)

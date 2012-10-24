@@ -88,32 +88,62 @@ pander.logical <- function(x, ...)
 
 #' @S3method pander image
 pander.image <- function(x, caption = attr(x, 'caption'), href = attr(x, 'href'), ...) {
+
     res <- pandoc.image.return(as.character(x), caption)
+
     if (is.null(href))
         cat(res)
     else
         pandoc.link(href, res)
+
 }
 
 #' @S3method pander table
 pander.table <- function(x, caption = attr(x, 'caption'), justify = attr(x, 'alignment'), ...) {
+
+    if (is.null(caption))
+        if (!is.null(storage$caption)) {
+            caption <- storage$caption
+            storage$caption <- NULL
+        }
+
     if (is.null(justify))
         justify <- 'left'
+
     pandoc.table(x, caption = caption, justify = justify)
+
 }
 
 #' @S3method pander data.frame
 pander.data.frame <- function(x, caption = attr(x, 'caption'), justify = attr(x, 'alignment'), ...) {
+
+    if (is.null(caption))
+        if (!is.null(storage$caption)) {
+            caption <- storage$caption
+            storage$caption <- NULL
+        }
+
     if (is.null(justify))
         justify <- 'left'
+
     pandoc.table(x, caption = caption, justify = justify)
+
 }
 
 #' @S3method pander matrix
 pander.matrix <- function(x, caption = attr(x, 'caption'), justify = attr(x, 'alignment'),  ...) {
+
+    if (is.null(caption))
+        if (!is.null(storage$caption)) {
+            caption <- storage$caption
+            storage$caption <- NULL
+        }
+
     if (is.null(justify))
         justify <- 'left'
+
     pandoc.table(x, caption = caption, justify = justify)
+
 }
 
 #' @S3method pander cast_df
@@ -122,11 +152,17 @@ pander.cast_df<- function(x, caption = attr(x, 'caption'), justify = attr(x, 'al
 
 #' @S3method pander numeric
 pander.numeric <- function(x, ...)
-    cat(p(format(round(x, panderOptions('round')), trim = TRUE, digits = panderOptions('digits'), decimal.mark = panderOptions('decimal.mark'))))
+    cat(p(x))
 
 #' @S3method pander character
-pander.character <- function(x, ...)
-    cat(x)
+pander.character <- function(x, ...) {
+
+    if (length(x) < 2)
+        cat(x)
+    else
+        cat(p(x))
+
+}
 
 #' @S3method pander factor
 pander.factor <- function(x, ...)
@@ -139,40 +175,79 @@ pander.list <- function(x, ...)
 #' @S3method pander lm
 pander.lm <- function(x, caption = attr(x, 'caption'), ...) {
 
-    if (is.null(caption))
-        caption <- sprintf('Fitting linear model: %s', deparse(x$call$formula))
+    if (is.null(caption)) {
+        if (is.null(storage$caption))
+            caption <- sprintf('Fitting linear model: %s', deparse(x$call$formula))
+        else {
+            caption <- storage$caption
+            storage$caption <- NULL
+        }
+    }
 
     pandoc.table(summary(x)$coeff, caption = caption, justify = c('right', rep('centre', 4)))
+
 }
 
 #' @S3method pander glm
 pander.glm <- function(x, caption = attr(x, 'caption'), ...) {
 
-    if (is.null(caption))
-        caption <- sprintf('Fitting generalized (%s) linear model: %s', paste(x$family$family, x$family$link, sep = '/'), deparse(x$call$formula))
+    if (is.null(caption)) {
+        if (is.null(storage$caption))
+            caption <- sprintf('Fitting generalized (%s) linear model: %s', paste(x$family$family, x$family$link, sep = '/'), deparse(x$call$formula))
+        else {
+            caption <- storage$caption
+            storage$caption <- NULL
+        }
+    }
 
     pandoc.table(summary(x)$coeff, caption = caption, justify = c('right', rep('centre', 4)))
+
 }
 
 #' @S3method pander aov
 pander.aov <- function(x, caption = attr(x, 'caption'), ...) {
 
     res <- unclass(summary(x))[[1]]
-    if (is.null(caption))
-        caption <- 'Analysis of Variance Model'
+
+    if (is.null(caption)) {
+        if (is.null(storage$caption))
+            caption <- 'Analysis of Variance Model'
+        else {
+            caption <- storage$caption
+            storage$caption <- NULL
+        }
+    }
 
     pandoc.table(res, caption = caption, justify = c('right', rep('centre', ncol(res))))
 }
 
 #' @S3method pander anova
 pander.anova <- function(x, caption = attr(x, 'caption'), ...) {
-    if (is.null(caption))
-        caption <- strsplit(attr(x, 'heading'), '\n')[[1]][1]
+
+    if (is.null(caption)) {
+        if (is.null(storage$caption))
+            caption <- strsplit(attr(x, 'heading'), '\n')[[1]][1]
+        else {
+            caption <- storage$caption
+            storage$caption <- NULL
+        }
+    }
+
     pandoc.table(x, caption = caption, justify = c('right', rep('centre', ncol(x))))
+
 }
 
 #' @S3method pander htest
-pander.htest <- function(x, ...) {
+pander.htest <- function(x, caption = attr(x, 'caption'), ...) {
+
+    if (is.null(caption)) {
+        if (is.null(storage$caption))
+            caption <- paste0(x$method, ': `', gsub('( and | by )', '`\\1`', x$data.name), '`')
+        else {
+            caption <- storage$caption
+            storage$caption <- NULL
+        }
+    }
 
     ## we do not know which values are provided
     res <- data.frame(placeholder = 'FOO')
@@ -191,15 +266,21 @@ pander.htest <- function(x, ...) {
     res$placeholder <- NULL
 
     ## return
-    pandoc.table(res, caption = paste0(x$method, ': `', gsub('( and | by )', '`\\1`', x$data.name), '`'), justify = 'centre')
+    pandoc.table(res, caption = caption, justify = 'centre')
 
 }
 
 #' @S3method pander prcomp
 pander.prcomp <- function(x, caption = attr(x, 'caption'), ...) {
 
-    if (is.null(caption))
-        caption <- 'Principal Components Analysis'
+    if (is.null(caption)) {
+        if (is.null(storage$caption))
+            caption <- 'Principal Components Analysis'
+        else {
+            caption <- storage$caption
+            storage$caption <- NULL
+        }
+    }
 
     pandoc.table(x$rotation, caption = caption)
     pandoc.table(summary(x)$importance)
@@ -208,8 +289,14 @@ pander.prcomp <- function(x, caption = attr(x, 'caption'), ...) {
 #' @S3method pander density
 pander.density <- function(x, caption = attr(x, 'caption'), ...) {
 
-    if (is.null(caption))
-        caption <- sprintf('Kernel density of *%s* (bandwidth: %s)', x$data.name, format(x$bw))
+    if (is.null(caption)) {
+        if (is.null(storage$caption))
+            caption <- sprintf('Kernel density of *%s* (bandwidth: %s)', x$data.name, format(x$bw))
+        else {
+            caption <- storage$caption
+            storage$caption <- NULL
+        }
+    }
 
     res <- data.frame(Coordinates = as.numeric(summary(x$x)), 'Density values' = as.numeric(summary(x$y)), check.names = FALSE)
     rownames(res) <- names(summary(1))
