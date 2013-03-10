@@ -65,6 +65,8 @@ storage           <- new.env()
 storage$caption   <- NULL
 storage$alignment <- NULL
 debug             <- new.env()
+debug$nested      <- 0
+debug$nestedID    <- 0
 
 ## cache storage
 cached.results <- new.env()
@@ -132,6 +134,8 @@ masked.plots$plot <- masked.plots$barplot <- masked.plots$lines <- masked.plots$
         if (is.null(mc$col.clus))
             mc$col.clus <- cs
     }
+
+    ## remove boxes
     if (fn %in% c('pairs', 'stripchart')) {
         doAddGrid <- FALSE
         par(fg = fc)
@@ -141,6 +145,7 @@ masked.plots$plot <- masked.plots$barplot <- masked.plots$lines <- masked.plots$
         else
             par(fg = bc)
     }
+
     if (fn == 'pie')
         mc$col <- cs
 

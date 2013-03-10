@@ -59,6 +59,7 @@ repChar <- function(x, n, sep = '')
 #' @references This function was moved from \code{rapport} package: \url{http://rapport-package.info/}.
 p <- function(x, wrap = panderOptions('p.wrap'), sep = panderOptions('p.sep'), copula = panderOptions('p.copula'), limit = Inf){
 
+    attributes(x) <- NULL
     stopifnot(is.vector(x))
     stopifnot(all(sapply(list(wrap, sep, copula), function(x) is.character(x) && length(x) == 1)))
     x.len <- length(x)
@@ -95,6 +96,7 @@ p <- function(x, wrap = panderOptions('p.wrap'), sep = panderOptions('p.sep'), c
 #' @author Aleksandar Blagotic
 #' @references This function was moved from \code{rapport} package: \url{http://rapport-package.info/}.
 wrap <- function(x, wrap = '"'){
+    attributes(x) <- NULL
     stopifnot(is.vector(x))
     sprintf('%s%s%s', wrap, x, wrap)
 }
@@ -148,6 +150,7 @@ pandoc.p <- function(...)
 #' @keywords internal
 pandoc.add.formatting <- function(x, f) {
 
+    attributes(x) <- NULL
     if (!is.vector(x))
         stop('Sorry, vectors only!')
 
@@ -380,7 +383,7 @@ pandoc.header.return <- function(x, level = 1, style = c('atx', 'setext')) {
 
     res <- switch(style,
            'atx'    = paste(repChar('#', level), x),
-           'setext' = paste(x, repChar(ifelse(level == 1, '=', '-'), nchar(x)), sep = '\n')
+           'setext' = paste(x, repChar(ifelse(level == 1, '=', '-'), nchar(x, type = 'width')), sep = '\n')
            )
 
     add.blank.lines(res)
@@ -583,7 +586,7 @@ pandoc.list <- function(...)
 #' pandoc.table(t, style = "grid", split.cells = 5)
 #' pandoc.table(t, style = "simple")
 #' tryCatch(pandoc.table(t, style = "simple", split.cells = 5), error = function(e) 'Yeah, no newline support in simple tables')
-pandoc.table.return <- function(t, caption = storage$caption, digits = panderOptions('digits'), decimal.mark = panderOptions('decimal.mark'), round = panderOptions('round'), justify = 'left', style = c('multiline', 'grid', 'simple'), split.tables = panderOptions('table.split.table'), split.cells = panderOptions('table.split.cells')) {
+pandoc.table.return <- function(t, caption = storage$caption, digits = panderOptions('digits'), decimal.mark = panderOptions('decimal.mark'), round = panderOptions('round'), justify = 'centre', style = c('multiline', 'grid', 'simple'), split.tables = panderOptions('table.split.table'), split.cells = panderOptions('table.split.cells')) {
 
     ## helper functions
     table.expand <- function(cells, cols.width, justify, sep.cols) {
@@ -595,7 +598,7 @@ pandoc.table.return <- function(t, caption = storage$caption, digits = panderOpt
             if (style == 'simple')
                 stop('Pandoc does not support newlines in simple table format!')
 
-            res <- lapply(as.character(df$txt), function(x) strsplit(x, '\n')[[1]])
+            res <- lapply(strsplit(as.character(df$txt), '\n'), unlist)
             res.lines <- max(sapply(res, length))
             res <- paste(sapply(1:res.lines, function(i) table.expand(sapply(res, function(x) ifelse(is.na(x[i]), '  ', x[i])), cols.width, justify, sep.cols)), collapse = '\n')
             return(res)
@@ -611,11 +614,29 @@ pandoc.table.return <- function(t, caption = storage$caption, digits = panderOpt
     split.large.cells <- function(cells)
         sapply(cells, function(x) {
 
-            ## remove trailing zeros
-            x <- sub('[\\.,]+0*$', '', x)
-
             ## split
-            x <- paste(strwrap(x, width = split.cells), collapse = '\n')
+            if (nchar(x) == nchar(x, type = 'width')) {
+
+                x <- paste(strwrap(x, width = split.cells), collapse = '\n')
+
+            } else {
+
+                # dealing with CJK chars
+                split <- strsplit(x, '\\s')[[1]]
+                n <- nchar(split[1], type = 'width')
+                x <- split[1]
+                for (s in tail(split, -1)) {
+                    nc <- nchar(s, type = 'width')
+                    n  <- n + nc + 1
+                    if (n > split.cells) {
+                        n <- nc
+                        x <- paste(x, s, sep = '\n')
+                    } else {
+                        x <- paste(x, s, sep = ' ')
+                    }
+                }
+
+            }
 
             ## return
             if (x == 'NA')
@@ -631,28 +652,31 @@ pandoc.table.return <- function(t, caption = storage$caption, digits = panderOpt
     else
         style <- match.arg(style)
 
-    ## format numeric & convert to string
+    ## round numbers & cut digits & apply decimal mark
     if (length(dim(t)) == 0) {  # named char
-        ## just numbers
         t.n <- as.numeric(which(sapply(t, is.numeric)))
-        if (length(t.n) > 0)
+        if (length(t.n) > 0) {
             t[t.n] <- round(t[t.n], round)
+            t[t.n] <- sapply(t[t.n], format, trim = TRUE, digits = digits, decimal.mark = decimal.mark)
+        }
     }
     if (length(dim(t)) == 1) {
-        ## just numbers
         t.n <- as.numeric(which(apply(t, 1, is.numeric)))
-        if (length(t.n) > 0)
+        if (length(t.n) > 0) {
             t[t.n] <- round(t[t.n], round)
+            t[t.n] <- apply(t[t.n], 1, format, trim = TRUE, digits = digits, decimal.mark = decimal.mark)
+        }
     }
     if (length(dim(t)) == 2) {
-        ## just numbers (not just column-wise to make it general)
         t.n <- as.numeric(which(apply(t, 2, is.numeric)))
-        if (length(t.n) > 0)
+        if (length(t.n) > 0) {
             t[, t.n] <- round(t[, t.n], round)
+            t[, t.n] <- apply(t[, t.n, drop = FALSE], c(1,2), format, trim = TRUE, digits = digits, decimal.mark = decimal.mark)
+        }
     }
 
-    ## apply decimal.mark
-    t <- format(t, trim = TRUE, digits = digits, decimal.mark = decimal.mark)
+    ## drop unexpected classes and revert back to a common format
+    t <- format(t, trim = TRUE)
 
     ## TODO: adding formatting (emphasis, strong etc.)
 
@@ -668,15 +692,15 @@ pandoc.table.return <- function(t, caption = storage$caption, digits = panderOpt
         t.colnames  <- names(t)
         if (!is.null(t.colnames)) {
             t.colnames       <- split.large.cells(t.colnames)
-            t.colnames.width <- sapply(t.colnames, function(x) max(nchar(strsplit(x, '\n')[[1]]), 0), USE.NAMES = FALSE) + 2
+            t.colnames.width <- sapply(t.colnames, function(x) max(nchar(strsplit(x, '\n')[[1]], type = 'width'), 0), USE.NAMES = FALSE) + 2
         } else {
             t.colnames.width <- 0
         }
 
         if (length(dim(t)) == 0)
-            t.width <- as.numeric(apply(cbind(t.colnames.width, as.numeric(sapply(t, nchar))), 1, max))
+            t.width <- as.numeric(apply(cbind(t.colnames.width, as.numeric(sapply(t, nchar, type = 'width'))), 1, max))
         else
-            t.width <- as.numeric(apply(cbind(t.colnames.width, as.numeric(apply(t, 1, nchar))), 1, max))
+            t.width <- as.numeric(apply(cbind(t.colnames.width, as.numeric(apply(t, 1, nchar, type = 'width'))), 1, max))
 
     } else {
 
@@ -690,13 +714,13 @@ pandoc.table.return <- function(t, caption = storage$caption, digits = panderOpt
         t.colnames  <- colnames(t)
         if (!is.null(t.colnames)) {
             t.colnames  <- split.large.cells(t.colnames)
-            t.colnames.width <- sapply(t.colnames, function(x) max(nchar(strsplit(x, '\n')[[1]]), 0), USE.NAMES = FALSE) + 2
+            t.colnames.width <- sapply(t.colnames, function(x) max(nchar(strsplit(x, '\n')[[1]], type = 'width'), 0), USE.NAMES = FALSE) + 2
         } else {
             t.colnames.width <- 0
         }
 
         ## also dealing with cells split by newlines
-        t.width     <-  as.numeric(apply(cbind(t.colnames.width, apply(t, 2, function(x) max(sapply(strsplit(x,'\n'), function(x) max(nchar(x), 0))))), 1, max))
+        t.width     <-  as.numeric(apply(cbind(t.colnames.width, apply(t, 2, function(x) max(sapply(strsplit(x,'\n'), function(x) max(nchar(x, type = 'width'), 0))))), 1, max))
 
         ## remove obvious row.names
         if (all(rownames(t) == 1:nrow(t)))
@@ -711,7 +735,7 @@ pandoc.table.return <- function(t, caption = storage$caption, digits = panderOpt
 
         t.rownames <- split.large.cells(t.rownames)
         t.colnames <- c('&nbsp;', t.colnames)
-        t.width <- c(max(sapply(strsplit(t.rownames, '\n'), function(x) max(nchar(x), 0))), t.width)
+        t.width <- c(max(sapply(strsplit(t.rownames, '\n'), function(x) max(nchar(x, type = 'width'), 0))), t.width)
         t.width[1] <- t.width[1] + 2
 
     }
@@ -843,7 +867,7 @@ set.caption <- function(x)
 #' @param align character vector which length equals to one (would be repeated \code{n} times) ot \code{n} - where \code{n} equals to the number of columns in the following table
 #' @param row.names string holding the alignment of the (optional) row names
 #' @export
-set.alignment <- function(align = 'centre', row.names = 'left')
+set.alignment <- function(align = 'centre', row.names = 'right')
     assign('alignment', list(align = align, row.names = row.names) , envir = storage)
 
 
