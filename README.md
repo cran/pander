@@ -1,12 +1,12 @@
-% [pander: An R Pandoc writer](https://github.com/Rapporter/pander)
+% [pander: A Pandoc writer in R](https://github.com/Rapporter/pander)
 
-**pander** is an [R](http://r-project.org) package containing [helpers](#helper-functions) to return [Pandoc](http://johnmacfarlane.net/pandoc/)'s markdown of user specified format or *automatically* of several type of [**R objects**](#generic-pander-method).
+**pander** is an [R](http://r-project.org) package containing [helpers](#helper-functions) to return [Pandoc](http://johnmacfarlane.net/pandoc/)'s markdown *automatically* from several type of [**R objects**](#generic-pander-method).
 
-The package is also capable of exporting/converting complex Pandoc documents (reports) in three ways ATM:
+The package is also capable of exporting/converting complex Pandoc documents (reports) in three ways at the moment:
 
-  * create somehow a markdown text file (e.g. with `brew`, `knitr` or any scripts of yours, maybe with `Pandoc.brew` - see just below) and transform that to other formats (like HTML, odt, pdf, docx etc.) with `Pandoc.convert`
+  * create somehow a markdown text file (e.g. with `brew`, `knitr` or any scripts of yours, maybe with `Pandoc.brew` - see just [below](#brew-to-pandoc)) and transform that to other formats (like HTML, odt, pdf, docx etc.) with `Pandoc.convert`
 
-  * users might write some reports in [brew](http://cran.r-project.org/web/packages/brew/index.html) syntax resulting in a pretty *Pandoc* document (where each R object are transformed to nicely formatted table, list etc.) and also in a **bunch of formats** (like HTML, odt, pdf, docx etc.) automatically.
+  * users might write some reports in a forked [brew](http://cran.r-project.org/web/packages/brew/index.html) syntax resulting in a pretty *Pandoc* document (where each R object are transformed to nicely formatted table, list etc.) and also in a **bunch of formats** (like HTML, odt, pdf, docx etc.) automatically.
 
     *Example*: this [`README.md`](https://github.com/Rapporter/pander/blob/master/README.md) is cooked with `Pandoc.brew` based on [`inst/README.brew`](https://github.com/Rapporter/pander/blob/master/inst/README.brew) and also exported to [HTML](http://rapporter.github.com/pander/). Details can be found [below](#brew-to-pandoc) or head directly to [examples](#examples).
 
@@ -24,9 +24,15 @@ The package is also capable of exporting/converting complex Pandoc documents (re
 
 # Installation
 
-Currently, this package is hosted only on [GitHub](https://github.com/Rapporter/pander).
+The stable version of the package can be found on [CRAN](http://cran.r-project.org/web/packages/pander/) and can be installed easily in the R console:
 
-Until this gets on [CRAN](cran.r-project.org), you can install it via nifty function from `devtools` package:
+```
+install.packages('pander')
+```
+
+On the other hand I welcome everyone to use the most recent version of the package with added features and currently hosted on [GitHub](https://github.com/Rapporter/pander). The current build status is: [![Build Status](https://travis-ci.org/Rapporter/pander.png?branch=master)](https://travis-ci.org/Rapporter/pander)
+
+It can be installed easily with the nifty function of `devtools` package:
 
 ```
 library(devtools)
@@ -39,7 +45,7 @@ Or download the [sources in a zip file](https://github.com/Rapporter/pander/zipb
 
 `pander` heavily builds on [Pandoc](http://johnmacfarlane.net/pandoc) which should be **pre-installed** before trying to convert your reports to [different formats](http://johnmacfarlane.net/pandoc/). Although **main functions work without Pandoc**, e.g. you can generate a markdown formatted report via [Pandoc.brew](#brew-to-pandoc) or the custom [reference class](#live-report-generation), but I would really suggest to install that really great piece of software!
 
-The [installation process of Pandoc](http://johnmacfarlane.net/pandoc/installing.html) is quite straightforward on most operating systems: just download and run the binary (a few megabytes), and get a full-blown document converted in a few seconds/minutes. On different Linux distributions it might be a bit more complicated (as repositories tend to provide out-dated versions of Pandoc, so you would need `cabal-install` to [install from sources](https://github.com/jgm/pandoc/wiki/Installing-the-development-version-of-pandoc-1.9)). *Please do not forget to restart your R session to update your `PATH` after installation!*
+The [installation process of Pandoc](http://johnmacfarlane.net/pandoc/installing.html) is quite straightforward on most operating systems: just download and run the binary (a few megabytes), and get a full-blown document converted in a few seconds/minutes. On different Linux distributions it might be a bit more complicated (as repositories tend to provide out-dated versions of Pandoc, so you would need `cabal-install` to [install from sources](http://johnmacfarlane.net/pandoc/installing.html#all-platforms)). *Please do not forget to restart your R session to update your `PATH` after installation!*
 
 An alternative method (bypassing Pandoc dependency) would be to call the awesome [`markdown`](http://cran.r-project.org/web/packages/markdown/index.html) package to transform markdown (as far as I know: exclusively) to HTML.
 
@@ -55,7 +61,11 @@ Now you would only need a few cool packages from CRAN:
 
 # Helper functions
 
-There are a bunch of helper functions in `pander` which return user specified inputs in Pandoc format. You could find these functions starting with `pandoc.`. For example `pandoc.strong` would return the passed characters with strong emphasis. E.g.:
+There are a bunch of helper functions in `pander` which e.g. return user specified inputs in Pandoc format or applies some extra formatting on those. For a technical documentation, see the HTML help files of the package at [help.r-enthusiasts.com](http://help.r-enthusiasts.com/library/pander/html/00Index.html).
+
+## Primitive functions
+
+You could find the Pandoc-related functions starting with `pandoc.` - for example `pandoc.strong` would return the passed characters with strong emphasis. E.g.:
 
 ```rout
 > pandoc.strong('FOO')
@@ -64,7 +74,24 @@ There are a bunch of helper functions in `pander` which return user specified in
 [1] "**FOO**"
 ```
 
-As it can be seen here `pandoc` functions generally prints to console and do not return anything. If you want the opposite (get the Pandoc format as a string): call each function ending in `.return` - like the second call in the above example. For details please check documentation, e.g. `?pandoc.strong`.
+As it can be seen here `pandoc` functions generally prints to console and do not return anythingby default (see: `?cat`). If you want the opposite (get the Pandoc format as a string): call each function ending in `.return` - like the second call in the above example. For details please check documentation, e.g. `?pandoc.strong`.
+
+The full list of primitive Pandoc-related functions are:
+
+  * pandoc.indent
+  * pandoc.p
+  * pandoc.strong
+  * pandoc.emphasis
+  * pandoc.strikeout
+  * pandoc.verbatim
+  * pandoc.link
+  * pandoc.image
+  * pandoc.footnote
+  * pandoc.horizontal.rule
+  * pandoc.header
+  * pandoc.title
+
+## Lists
 
 Of course there are more complex functions too. Besides verbatim texts, (image) links or footnotes (among others) there are a helper e.g. for **lists**:
 
@@ -95,48 +122,62 @@ II. Second element
 
 ```
 
-`pandoc` can return **tables** in [three formats](http://johnmacfarlane.net/pandoc/README.html#tables):
+## Tables
 
-  * The default style is the `multiline` format as most features (e.g. multi-line cells and alignment) are available in there.
+`pandoc` can return **tables** in [four formats supported by Pandoc](http://johnmacfarlane.net/pandoc/README.html#tables), including the pipe tables also used in `knitr` and [PHP Markdown Extra format](http://michelf.ca/projects/php-markdown/extra/#table):
+
+  * The default style is the [`multiline` format](http://johnmacfarlane.net/pandoc/README.html#multiline-tables) as most features (e.g. multi-line cells and alignment) are available in there.
 
 ```rout
 > m <- mtcars[1:2, 1:3]
 > pandoc.table(m)
 
 --------------------------------------
-&nbsp;              mpg   cyl   disp  
+      &nbsp;         mpg   cyl   disp 
 ------------------- ----- ----- ------
-**Mazda RX4**       21    6     160   
+   **Mazda RX4**     21     6    160  
 
-**Mazda RX4 Wag**   21    6     160   
+ **Mazda RX4 Wag**   21     6    160  
 --------------------------------------
 
 ```
 
-  * `simple` tables do not support line breaks in cells:
+  * [`simple` tables](http://johnmacfarlane.net/pandoc/README.html#simple-tables) do not support line breaks in cells:
 
 ```rout
 > pandoc.table(m, style = "simple")
 
-&nbsp;              mpg   cyl   disp  
+      &nbsp;         mpg   cyl   disp 
 ------------------- ----- ----- ------
-**Mazda RX4**       21    6     160   
-**Mazda RX4 Wag**   21    6     160   
+   **Mazda RX4**     21     6    160  
+ **Mazda RX4 Wag**   21     6    160  
 
 ```
 
-  * `grid` format are really handy for [emacs](http://emacswiki.org/emacs/TableMode) users but do support line breaks inside cells, but do not tolerate cell alignment:
+  * [`grid` format](http://johnmacfarlane.net/pandoc/README.html#grid-tables) is really handy for [emacs](http://emacswiki.org/emacs/TableMode) users, does support line breaks inside cells, but do not tolerate cell alignment:
 
 ```rout
 > pandoc.table(m, style = "grid")
 
 +---------------------+-------+-------+--------+
-| &nbsp;              | mpg   | cyl   | disp   |
+|       &nbsp;        |  mpg  |  cyl  |  disp  |
 +=====================+=======+=======+========+
-| **Mazda RX4**       | 21    | 6     | 160    |
+|    **Mazda RX4**    |  21   |   6   |  160   |
 +---------------------+-------+-------+--------+
-| **Mazda RX4 Wag**   | 21    | 6     | 160    |
+|  **Mazda RX4 Wag**  |  21   |   6   |  160   |
 +---------------------+-------+-------+--------+
+
+```
+
+  * [`rmarkdown` tables](http://johnmacfarlane.net/pandoc/README.html#pipe-tables) can be used directly with `knitr` since they are understood by the `markdown` package:
+
+```rout
+> pandoc.table(m, style = "rmarkdown")
+
+|       &nbsp;        |  mpg  |  cyl  |  disp  |
+|:-------------------:|:-----:|:-----:|:------:|
+|    **Mazda RX4**    |  21   |   6   |  160   |
+|  **Mazda RX4 Wag**  |  21   |   6   |  160   |
 
 ```
 
@@ -146,11 +187,11 @@ Besides the `style` parameter there are several other ways to tweak the output l
 > pandoc.table(m, style = "grid", caption = "Hello caption!")
 
 +---------------------+-------+-------+--------+
-| &nbsp;              | mpg   | cyl   | disp   |
+|       &nbsp;        |  mpg  |  cyl  |  disp  |
 +=====================+=======+=======+========+
-| **Mazda RX4**       | 21    | 6     | 160    |
+|    **Mazda RX4**    |  21   |   6   |  160   |
 +---------------------+-------+-------+--------+
-| **Mazda RX4 Wag**   | 21    | 6     | 160    |
+|  **Mazda RX4 Wag**  |  21   |   6   |  160   |
 +---------------------+-------+-------+--------+
 
 Table: Hello caption!
@@ -163,11 +204,11 @@ Table: Hello caption!
 > pandoc.table(mtcars[1:2, ], style = "grid", caption = "Hello caption!")
 
 +---------------------+-------+-------+--------+------+--------+-------+
-| &nbsp;              | mpg   | cyl   | disp   | hp   | drat   | wt    |
+|       &nbsp;        |  mpg  |  cyl  |  disp  |  hp  |  drat  |  wt   |
 +=====================+=======+=======+========+======+========+=======+
-| **Mazda RX4**       | 21    | 6     | 160    | 110  | 3.9    | 2.620 |
+|    **Mazda RX4**    |  21   |   6   |  160   | 110  |  3.9   | 2.62  |
 +---------------------+-------+-------+--------+------+--------+-------+
-| **Mazda RX4 Wag**   | 21    | 6     | 160    | 110  | 3.9    | 2.875 |
+|  **Mazda RX4 Wag**  |  21   |   6   |  160   | 110  |  3.9   | 2.875 |
 +---------------------+-------+-------+--------+------+--------+-------+
 
 Table: Hello caption! (continued below)
@@ -175,11 +216,11 @@ Table: Hello caption! (continued below)
  
 
 +---------------------+--------+------+------+--------+--------+
-| &nbsp;              | qsec   | vs   | am   | gear   | carb   |
+|       &nbsp;        |  qsec  |  vs  |  am  |  gear  |  carb  |
 +=====================+========+======+======+========+========+
-| **Mazda RX4**       | 16.46  | 0    | 1    | 4      | 4      |
+|    **Mazda RX4**    | 16.46  |  0   |  1   |   4    |   4    |
 +---------------------+--------+------+------+--------+--------+
-| **Mazda RX4 Wag**   | 17.02  | 0    | 1    | 4      | 4      |
+|  **Mazda RX4 Wag**  | 17.02  |  0   |  1   |   4    |   4    |
 +---------------------+--------+------+------+--------+--------+
 
 ```
@@ -190,28 +231,190 @@ And too wide cells are also split by line breaks. E.g.:
 > pandoc.table(data.frame(id=1:2, value=c('FOO', 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.')))
 
 ----------------------------------
-id   value                        
+ id              value            
 ---- -----------------------------
-1    FOO                          
+ 1                FOO             
 
-2    Lorem ipsum dolor sit amet,  
+ 2    Lorem ipsum dolor sit amet, 
      consectetur adipisicing elit,
-     sed do eiusmod tempor        
-     incididunt ut labore et      
+         sed do eiusmod tempor    
+        incididunt ut labore et   
      dolore magna aliqua. Ut enim 
      ad minim veniam, quis nostrud
      exercitation ullamco laboris 
      nisi ut aliquip ex ea commodo
-     consequat. Duis aute irure   
-     dolor in reprehenderit in    
-     voluptate velit esse cillum  
-     dolore eu fugiat nulla       
-     pariatur. Excepteur sint     
-     occaecat cupidatat non       
-     proident, sunt in culpa qui  
+      consequat. Duis aute irure  
+       dolor in reprehenderit in  
+      voluptate velit esse cillum 
+        dolore eu fugiat nulla    
+       pariatur. Excepteur sint   
+        occaecat cupidatat non    
+      proident, sunt in culpa qui 
      officia deserunt mollit anim 
-     id est laborum               
+            id est laborum.       
 ----------------------------------
+
+```
+
+## Caption
+
+Beside directly calling `pandoc.table`'s `caption` parameter, one could also set a caption even before printing the markdown format - just use `set.caption` function:
+
+```rout
+> set.caption('Hello caption!')
+> pandoc.table(mtcars[1:2, ])
+
+--------------------------------------------------------
+      &nbsp;         mpg   cyl   disp   hp   drat   wt  
+------------------- ----- ----- ------ ---- ------ -----
+   **Mazda RX4**     21     6    160   110   3.9   2.62 
+
+ **Mazda RX4 Wag**   21     6    160   110   3.9   2.875
+--------------------------------------------------------
+
+Table: Hello caption! (continued below)
+
+ 
+--------------------------------------------------
+      &nbsp;         qsec   vs   am   gear   carb 
+------------------- ------ ---- ---- ------ ------
+   **Mazda RX4**    16.46   0    1     4      4   
+
+ **Mazda RX4 Wag**  17.02   0    1     4      4   
+--------------------------------------------------
+
+```
+
+Of course the `set.caption` function is not needed to be called directly before `pandoc.table` and it can be also used by the [`pander` method](#generic-pander-method) or inside of [`Pandoc.brew` documents](#brew-to-pandoc) too.
+
+## Cell alignment
+
+One can specify the alignment of the cells in a table directly by setting the `justify` parameter in `pandoc.table`:
+
+```rout
+> panderOptions('table.split.table', Inf)
+> pandoc.table(head(iris), justify = 'right')
+
+-------------------------------------------------------------------
+  Sepal.Length   Sepal.Width   Petal.Length   Petal.Width   Species
+-------------- ------------- -------------- ------------- ---------
+           5.1           3.5            1.4           0.2    setosa
+
+           4.9             3            1.4           0.2    setosa
+
+           4.7           3.2            1.3           0.2    setosa
+
+           4.6           3.1            1.5           0.2    setosa
+
+             5           3.6            1.4           0.2    setosa
+
+           5.4           3.9            1.7           0.4    setosa
+-------------------------------------------------------------------
+```
+
+Or pre-define the alignment for `pandoc.table` or the `pander` S3 method by a helper function:
+
+```rout
+> set.alignment('left', row.names = 'right')
+> pandoc.table(mtcars[1:2,  1:5])
+
+--------------------------------------------------
+             &nbsp; mpg   cyl   disp   hp   drat  
+------------------- ----- ----- ------ ---- ------
+      **Mazda RX4** 21    6     160    110  3.9   
+
+  **Mazda RX4 Wag** 21    6     160    110  3.9   
+--------------------------------------------------
+
+> set.alignment(c('left', 'right', 'center', 'centre'))
+> pandoc.table(iris[1:3, 1:4])
+
+---------------------------------------------------------
+Sepal.Length     Sepal.Width  Petal.Length   Petal.Width 
+-------------- ------------- -------------- -------------
+5.1                      3.5      1.4            0.2     
+
+4.9                        3      1.4            0.2     
+
+4.7                      3.2      1.3            0.2     
+---------------------------------------------------------
+
+```
+
+Beside using `set.alignment` helper or passing parameters directly to `pandoc.table`, you may also set the default alignment styles with [`panderOptions`](#pander-options).
+
+And feel free to use either `centre` or `center` to align cells to the middle :)
+
+## Highlight cells
+
+And IMHO the most important feature in `pander` is the ease of highlighting rows, columns or any cells in a table that can be exported to HTML/pdf/MS Word etc. with the help of Pandoc.
+
+This can be achieved by calling `pandoc.table` directly and passing any (or more) of the following arguments:
+
+  * emphasize.rows
+  * emphasize.cols
+  * emphasize.cells
+  * emphasize.strong.rows
+  * emphasize.strong.cols
+  * emphasize.strong.cells
+
+`emphasize` would turn the affected cells to *italic*, while `emphasize.strong` would apply a **bold style** in the cell. Of course a cell can be also ***italic and strong*** at the same time.
+
+Arguments ending in `rows` or `cols` take a vector (e.g. `which` columns or rows to emphasize in a table), while the `cells` argument take either a vector (for one dimensional "tables") or an array-like data structure with two columns holding row and column indexes of cells to be emphasized -- just like what `which(..., arr.ind = TRUE)` returns.
+
+Examples:
+
+```rout
+> t <- mtcars[1:3, 1:5]
+> emphasize.cols(1)
+> emphasize.rows(1)
+> pandoc.table(t)
+
+----------------------------------------------------
+      &nbsp;         mpg    cyl   disp   hp    drat 
+------------------- ------ ----- ------ ----- ------
+   **Mazda RX4**     *21*   *6*  *160*  *110* *3.9* 
+
+ **Mazda RX4 Wag**   *21*    6    160    110   3.9  
+
+  **Datsun 710**    *22.8*   4    108    93    3.85 
+----------------------------------------------------
+
+```
+Of course the these helper functions works with [`pander` method](#generic-pander-method) or inside of [`Pandoc.brew` documents](#brew-to-pandoc) too:
+
+```rout
+> emphasize.strong.cells(which(t > 20, arr.ind = TRUE))
+> pander(t)
+
+---------------------------------------------------------
+      &nbsp;          mpg     cyl   disp     hp     drat 
+------------------- -------- ----- ------- ------- ------
+   **Mazda RX4**     **21**    6   **160** **110**  3.9  
+
+ **Mazda RX4 Wag**   **21**    6   **160** **110**  3.9  
+
+  **Datsun 710**    **22.8**   4   **108** **93**   3.85 
+---------------------------------------------------------
+
+> Pandoc.brew(text='
+## Title
+
+<\%\=
+set.caption('Formatted table')
+emphasize.rows(1)
+mtcars[1:2, 1:5]
+\%>')
+
+---------------------------------------------------
+      &nbsp;         mpg   cyl   disp   hp    drat 
+------------------- ----- ----- ------ ----- ------
+   **Mazda RX4**    *21*   *6*  *160*  *110* *3.9* 
+
+ **Mazda RX4 Wag**   21     6    160    110   3.9  
+---------------------------------------------------
+
+Table: Formatted table
 
 ```
 
@@ -229,7 +432,7 @@ Besides simple types (vectors, matrices, tables or data frames) lists might be i
   * **c**:
 
     -------
-    0   1
+     0   1
     --- ---
     19  13
     -------
@@ -261,41 +464,41 @@ A nested list can be seen above with a table and all (optional) list names insid
   * **observed**:
 
     -------------------
-    &nbsp;  3   4   5
+    &nbsp;   3   4   5
     ------- --- --- ---
-    **0**   15  4   0
+     **0**  15   4   0
 
-    **1**   0   8   5
+     **1**   0   8   5
     -------------------
 
   * **expected**:
 
     -------------------------
-    &nbsp;  3     4     5
+    &nbsp;    3     4     5
     ------- ----- ----- -----
-    **0**   8.906 7.125 2.969
+     **0**  8.906 7.125 2.969
 
-    **1**   6.094 4.875 2.031
+     **1**  6.094 4.875 2.031
     -------------------------
 
   * **residuals**:
 
     ----------------------------
-    &nbsp;  3      4      5
+    &nbsp;    3      4      5
     ------- ------ ------ ------
-    **0**   2.042  -1.171 -1.723
+     **0**  2.042  -1.171 -1.723
 
-    **1**   -2.469 1.415  2.083
+     **1**  -2.469 1.415  2.083
     ----------------------------
 
   * **stdres**:
 
     ----------------------------
-    &nbsp;  3      4      5
+    &nbsp;    3      4      5
     ------- ------ ------ ------
-    **0**   4.395  -2.323 -2.943
+     **0**  4.395  -2.323 -2.943
 
-    **1**   -4.395 2.323  2.943
+     **1**  -4.395 2.323  2.943
     ----------------------------
 
 <!-- end of list -->
@@ -312,7 +515,7 @@ The output of different **statistical methods** are tried to be prettyfied. Some
 ---------------------------------------------------
  Test statistic   P value   Alternative hypothesis 
 ---------------- --------- ------------------------
-      0.24       _0.1124_         two-sided        
+      0.14       _0.7166_         two-sided        
 ---------------------------------------------------
 
 Table: Two-sample Kolmogorov-Smirnov test: `runif(50)` and `runif(50)`
@@ -346,32 +549,32 @@ Table: Welch Two Sample t-test: `extra` by `group`
 > m <- glm(counts ~ outcome + treatment, family=poisson())
 > pander(m)
 
----------------------------------------------------------------
-           &nbsp;  Estimate   Std. Error   z value    Pr(>|z|) 
------------------ ---------- ------------ ---------- ----------
-  **(Intercept)** 3.045e+00   1.709e-01   1.781e+01  5.427e-71 
+--------------------------------------------------------------
+     &nbsp;        Estimate   Std. Error   z value   Pr(>|z|) 
+----------------- ---------- ------------ --------- ----------
+ **(Intercept)**    3.045       0.1709      17.81   5.427e-71 
 
-     **outcome2** -4.543e-01  2.022e-01   -2.247e+00 2.465e-02 
+  **outcome2**     -0.4543      0.2022     -2.247    0.02465  
 
-     **outcome3** -2.930e-01  1.927e-01   -1.520e+00 1.285e-01 
+  **outcome3**      -0.293      0.1927      -1.52     0.1285  
 
-   **treatment2** 1.338e-15   2.000e-01   6.690e-15  1.000e+00 
+ **treatment2**   1.338e-15      0.2      6.69e-15      1     
 
-   **treatment3** 1.421e-15   2.000e-01   7.105e-15  1.000e+00 
----------------------------------------------------------------
+ **treatment3**   1.421e-15      0.2      7.105e-15     1     
+--------------------------------------------------------------
 
 Table: Fitting generalized (poisson/log) linear model: counts ~ outcome + treatment
 
 > pander(anova(m))
 
 --------------------------------------------------------
-         &nbsp;  Df   Deviance   Resid. Df   Resid. Dev 
+    &nbsp;       Df   Deviance   Resid. Df   Resid. Dev 
 --------------- ---- ---------- ----------- ------------
-       **NULL**                      8         10.581   
+   **NULL**                          8         10.58    
 
-    **outcome**  2   5.452e+00       6         5.129    
+  **outcome**    2     5.452         6         5.129    
 
-  **treatment**  2   2.665e-15       4         5.129    
+ **treatment**   2   2.665e-15       4         5.129    
 --------------------------------------------------------
 
 Table: Analysis of Deviance Table
@@ -379,13 +582,13 @@ Table: Analysis of Deviance Table
 > pander(aov(m))
 
 -----------------------------------------------------------
-         &nbsp;  Df   Sum Sq    Mean Sq   F value   Pr(>F) 
+    &nbsp;       Df   Sum Sq    Mean Sq   F value   Pr(>F) 
 --------------- ---- --------- --------- --------- --------
-    **outcome**  2   9.267e+01 4.633e+01 2.224e+00  0.2242 
+  **outcome**    2     92.67     46.33     2.224    0.2242 
 
-  **treatment**  2   8.382e-31 4.191e-31 2.012e-32    1    
+ **treatment**   2   8.382e-31 4.191e-31 2.012e-32    1    
 
-  **Residuals**  4   8.333e+01 2.083e+01                   
+ **Residuals**   4     83.33     20.83                     
 -----------------------------------------------------------
 
 Table: Analysis of Variance Model
@@ -393,45 +596,45 @@ Table: Analysis of Variance Model
 > pander(prcomp(USArrests))
 
 -------------------------------------------------
-&nbsp;         PC1     PC2      PC3      PC4     
+    &nbsp;       PC1     PC2      PC3      PC4   
 -------------- ------- -------- -------- --------
-**Murder**     0.04170 -0.04482 0.07989  -0.99492
+  **Murder**   0.0417  -0.04482 0.07989  -0.9949 
 
-**Assault**    0.99522 -0.05876 -0.06757 0.03894 
+ **Assault**   0.9952  -0.05876 -0.06757 0.03894 
 
-**UrbanPop**   0.04634 0.97686  -0.20055 -0.05817
+ **UrbanPop**  0.04634  0.9769  -0.2005  -0.05817
 
-**Rape**       0.07516 0.20072  0.97408  0.07233 
+   **Rape**    0.07516  0.2007   0.9741  0.07233 
 -------------------------------------------------
 
 Table: Principal Components Analysis
 
---------------------------------------------------------------
-&nbsp;                       PC1      PC2      PC3     PC4    
----------------------------- -------- -------- ------- -------
-**Standard deviation**       83.73240 14.21240 6.48943 2.48279
+----------------------------------------------------------
+           &nbsp;             PC1     PC2    PC3     PC4  
+---------------------------- ------ ------- ------ -------
+   **Standard deviation**    83.73   14.21  6.489   2.483 
 
-**Proportion of Variance**   0.96553  0.02782  0.00580 0.00085
+ **Proportion of Variance**  0.9655 0.02782 0.0058 0.00085
 
-**Cumulative Proportion**    0.96553  0.99335  0.99915 1      
---------------------------------------------------------------
+ **Cumulative Proportion**   0.9655 0.9933  0.9991    1   
+----------------------------------------------------------
 
 > pander(density(mtcars$hp))
 
 --------------------------------------------
-       &nbsp;  Coordinates   Density values 
+   &nbsp;      Coordinates   Density values 
 ------------- ------------- ----------------
-     **Min.**    -32.12        0.0000050    
+  **Min.**       -32.12          5e-06      
 
-  **1st Qu.**     80.69        0.0004068    
+ **1st Qu.**      80.69        0.0004068    
 
-   **Median**    193.50        0.0016650    
+ **Median**       193.5         0.001665    
 
-     **Mean**    193.50        0.0022140    
+  **Mean**        193.5         0.002214    
 
-  **3rd Qu.**    306.30        0.0040900    
+ **3rd Qu.**      306.3         0.00409     
 
-     **Max.**    419.10        0.0060510    
+  **Max.**        419.1         0.006051    
 --------------------------------------------
 
 Table: Kernel density of *mtcars$hp* (bandwidth: 28.04104)
@@ -441,19 +644,19 @@ Table: Kernel density of *mtcars$hp* (bandwidth: 28.04104)
 > pander(density(mtcars$hp))
 
 --------------------------------------------
-       &nbsp;  Coordinates   Density values 
+   &nbsp;      Coordinates   Density values 
 ------------- ------------- ----------------
-     **Min.**    -32.12            0        
+  **Min.**       -32.12            0        
 
-  **1st Qu.**     80.69            0        
+ **1st Qu.**      80.69            0        
 
-   **Median**    193.50            0        
+ **Median**       193.5            0        
 
-     **Mean**    193.50            0        
+  **Mean**        193.5            0        
 
-  **3rd Qu.**    306.30            0        
+ **3rd Qu.**      306.3            0        
 
-     **Max.**    419.10           0.01      
+  **Max.**        419.1           0.01      
 --------------------------------------------
 
 Table: Kernel density of *mtcars$hp* (bandwidth: 28.04104)
@@ -467,31 +670,48 @@ And of course tables are formatted (e.g. auto add of line breaks and splitting u
 > pander(data.frame(id=1:2, value=c('FOO', 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.')))
 
 ----------------------------------
-id   value                        
+ id              value            
 ---- -----------------------------
-1    FOO                          
+ 1                FOO             
 
-2    Lorem ipsum dolor sit amet,  
+ 2    Lorem ipsum dolor sit amet, 
      consectetur adipisicing elit,
-     sed do eiusmod tempor        
-     incididunt ut labore et      
+         sed do eiusmod tempor    
+        incididunt ut labore et   
      dolore magna aliqua. Ut enim 
      ad minim veniam, quis nostrud
      exercitation ullamco laboris 
      nisi ut aliquip ex ea commodo
-     consequat. Duis aute irure   
-     dolor in reprehenderit in    
-     voluptate velit esse cillum  
-     dolore eu fugiat nulla       
-     pariatur. Excepteur sint     
-     occaecat cupidatat non       
-     proident, sunt in culpa qui  
+      consequat. Duis aute irure  
+       dolor in reprehenderit in  
+      voluptate velit esse cillum 
+        dolore eu fugiat nulla    
+       pariatur. Excepteur sint   
+        occaecat cupidatat non    
+      proident, sunt in culpa qui 
      officia deserunt mollit anim 
-     id est laborum               
+            id est laborum.       
 ----------------------------------
 
 Table: Foo Bar
 
+```
+
+## Methods
+
+The list of currently supported R classes:
+
+```rout
+> methods(pander)
+ [1] pander.anova*      pander.aov*        pander.cast_df*    pander.character*
+ [5] pander.data.frame* pander.default*    pander.density*    pander.evals*
+ [9] pander.factor*     pander.glm*        pander.htest*      pander.image*
+[13] pander.list*       pander.lm*         pander.logical*    pander.matrix*
+[17] pander.NULL*       pander.numeric*    pander.option      pander.POSIXct*
+[21] pander.POSIXt*     pander.prcomp*     pander.rapport*    pander.return
+[25] pander.table*
+
+   Non-visible functions are asterisked
 ```
 
 # Brew to Pandoc
@@ -637,12 +857,18 @@ myReport$export(open = FALSE)
   * `digits`: numeric (default: `2`) passed to `format`
   * `decimal.mark`: numeric (default: `.`) passed to `format`
   * `round`: numeric (default: `Inf`) passed to `round`
+  * `keep.trailing.zeros`: boolean (default: `FALSE`) show or remove trailing zeros in numbers (e.g. in numeric vectors or in columns of tables with numeric values)
   * `date`: string (default: `'%Y/%m/%d %X'`) passed to `format` when printing dates (`POSIXct` or `POSIXt`)
   * `header.style`: `'atx'` or `'setext'` passed to `pandoc.header`
   * `list.style`: `'bullet'` (default), `'ordered'` or `'roman'` passed to `pandoc.list`. Please not that this has no effect on `pander` methods.
   * `table.style`: `'multiline'`, `'grid'` or `'simple'` passed to `pandoc.table`
   * `table.split.table`: numeric passed to `pandoc.table` and also affects `pander` methods. This option tells `pander` where to split too wide tables. The default value (`80`) suggests the conventional number of characters used in a line, feel free to change (e.g. to `Inf` to disable this feature) if you are not using a VT100 terminal any more :)
   * `table.split.cells`: numeric (default: `30`) passed to `pandoc.table` and also affects `pander` methods. This option tells `pander` where to split too wide cells with line breaks. Set `Inf` to disable.
+  * `table.caption.prefix`: string (default: `Table: `) passed to `pandoc.table` to be used as caption prefix. Be sure about what you are doing if changing to other than `Table: ` or `:`.
+  * `table.continues`: string (default: `Table continues below`) passed to `pandoc.table` to be used as caption for long (split) without a use defined caption
+  * `table.continues.affix`: string (default: `(continued below)`) passed to `pandoc.table` to be used as an affix concatenated to the user defined caption for long (split) tables
+  * `table.alignment.default`: string (default: `centre`) that defines the default alignment of cells. Can be `left`, `right` or `centre` that latter can be also spelled as `center`
+  * `table.alignment.rownames`: string (default: `centre`) that defines the alignment of rownames in tables. Can be `left`, `right` or `centre` that latter can be also spelled as `center`
   * `evals.messages`: boolean (default: `TRUE`) passed to `evals`' `pander` method specifying if messages should be rendered
   * `p.wrap`: a string (default:`'_'`) to wrap vector elements passed to `p` function
   * `p.sep`: a string (default: `', '`) with the main separator passed to `p` function
@@ -779,7 +1005,9 @@ evals('mean(xx)')
 
 # Evals
 
-Sorry, no online documentation ATM. Please check: `?evals`
+Sorry, no online documentation here ATM. Please check: `?evals`
+
+Or head to the CRAN version of the docs at [help.r-enthusiasts.com](http://help.r-enthusiasts.com/library/pander/html/evals.html)
 
 # ESS
 
@@ -806,4 +1034,4 @@ To use this small lib, just type: `M-x pander-mode` on any document. It might be
 
 
 -------
-This report was generated with [R](http://www.r-project.org/) (2.15.1) and [pander](https://github.com/rapporter/pander) (0.2) in 1.058 sec on x86_64-unknown-linux-gnu platform.
+This report was generated with [R](http://www.r-project.org/) (3.0.0) and [pander](https://github.com/rapporter/pander) (0.3.7) in 1.55 sec on x86_64-unknown-linux-gnu platform.
