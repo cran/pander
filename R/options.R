@@ -4,6 +4,7 @@
     options('pander' = list(
                 'digits'                   = 4,
                 'decimal.mark'             = '.',
+                'big.mark'                 = '',
                 'round'                    = Inf,
                 'keep.trailing.zeros'      = FALSE,
                 'date'                     = '%Y/%m/%d %X',
@@ -85,7 +86,7 @@ hash.cache.last.used <- new.env() # when was the hash last queried
 
 ## masked plots
 masked.plots <- new.env()
-masked.plots$plot <- masked.plots$barplot <- masked.plots$lines <- masked.plots$pie <- masked.plots$boxplot <- masked.plots$polygon <- masked.plots$points <- masked.plots$legend <- masked.plots$hist <- masked.plots$pairs <- masked.plots$stripchart <- masked.plots$clusplot <- function (...) {
+masked.plots$plot <- masked.plots$barplot <- masked.plots$lines <- masked.plots$pie <- masked.plots$boxplot <- masked.plots$polygon <- masked.plots$points <- masked.plots$legend <- masked.plots$hist <- masked.plots$pairs <- masked.plots$stripchart <- masked.plots$clusplot <- masked.plots$text <- function (...) {
 
     mc      <- match.call()
     fn      <- deparse(mc[[1]])
@@ -93,74 +94,81 @@ masked.plots$plot <- masked.plots$barplot <- masked.plots$lines <- masked.plots$
     fn.orig <- parse(text = paste0(fn.pkg, '::', fn))[[1]]
     mc      <- match.call(get(fn, envir = .GlobalEnv))
 
-    ## pander options
-    fc  <- panderOptions('graph.fontcolor')
-    fbs <- panderOptions('graph.fontsize')
-    bc  <- panderOptions('graph.background')
-    gc  <- panderOptions('graph.grid.color')
-    cex <- fbs/12
-    cs <- panderOptions('graph.colors')
-    if (panderOptions('graph.color.rnd'))
-        cs <- sample(cs)
-    cb <- cs[1]
+    if (!(!is.null(mc$plot) && !mc$plot)) {
 
-    ## global par update
-    par(
-      family   = panderOptions('graph.fontfamily'),
-      cex      = cex, cex.axis = cex * 0.8, cex.lab = cex, cex.main = cex * 1.2, cex.sub = cex,
-      bg       = bc, # TODO: how could we color only the inner plot area globally? Not like: https://stat.ethz.ch/pipermail/r-help/2003-May/033971.html
-      las      = panderOptions('graph.axis.angle'),
-      lwd      = 2,
-      pch      = panderOptions('graph.symbol'),
-      col.axis = fc, col.lab = fc, col.main = fc, col.sub = fc)
+        ## pander options
+        fc  <- panderOptions('graph.fontcolor')
+        fbs <- panderOptions('graph.fontsize')
+        bc  <- panderOptions('graph.background')
+        gc  <- panderOptions('graph.grid.color')
+        cex <- fbs/12
+        cs <- panderOptions('graph.colors')
+        if (panderOptions('graph.color.rnd'))
+            cs <- sample(cs)
+        cb <- cs[1]
 
-    ## remove margins
-    if (panderOptions('graph.nomargin')) {
-        par(mar = c(4.1, 4.3, 2.1, 0.1))
+        ## global par update
+        if (!fn %in% c('text')) {
+            par(
+                family   = panderOptions('graph.fontfamily'),
+                cex      = cex, cex.axis = cex * 0.8, cex.lab = cex, cex.main = cex * 1.2, cex.sub = cex,
+                bg       = bc, # TODO: how could we color only the inner plot area globally? Not like: https://stat.ethz.ch/pipermail/r-help/2003-May/033971.html
+                las      = panderOptions('graph.axis.angle'),
+                lwd      = 2,
+                pch      = panderOptions('graph.symbol'),
+                col.axis = fc, col.lab = fc, col.main = fc, col.sub = fc)
+        }
+
+        ## remove margins
+
+        if (panderOptions('graph.nomargin') & !fn %in% c('text')) {
+            par(mar = c(4.1, 4.3, 2.1, 0.1))
+        }
+
+        ## default: grid is added to all plots
+        doAddGrid <- TRUE
+
+        ## update colors
+        if (is.null(mc$col) & is.null(mc$color))
+            mc$col <- cb
+        if (fn == 'boxplot')
+            mc$border <- 'black'
+        if (fn == 'clusplot') {
+            mc$col <- NULL
+            if (is.null(mc$color))
+                mc$color <- TRUE
+            if (is.null(mc$shade))
+                mc$shade <- TRUE
+            if (is.null(mc$labels))
+                mc$labels <- 4
+            if (is.null(mc$col.p))
+                mc$col.p <- 'black'
+            if (is.null(mc$col.clus))
+                mc$col.clus <- cs
+        }
+
+        ## remove boxes
+        if (fn %in% c('pairs', 'stripchart')) {
+            doAddGrid <- FALSE
+            par(fg = fc)
+        } else {
+            if (panderOptions('graph.boxes'))
+                par(fg = gc)
+            else
+                par(fg = bc)
+        }
+
+        if (fn == 'pie')
+            mc$col <- cs
+
     }
-
-    ## default: grid is added to all plots
-    doAddGrid <- TRUE
-
-    ## update colors
-    if (is.null(mc$col) & is.null(mc$color))
-        mc$col <- cb
-    if (fn == 'boxplot')
-        mc$border <- 'black'
-    if (fn == 'clusplot') {
-        mc$col <- NULL
-        if (is.null(mc$color))
-            mc$color <- TRUE
-        if (is.null(mc$shade))
-            mc$shade <- TRUE
-        if (is.null(mc$labels))
-            mc$labels <- 4
-        if (is.null(mc$col.p))
-            mc$col.p <- 'black'
-        if (is.null(mc$col.clus))
-            mc$col.clus <- cs
-    }
-
-    ## remove boxes
-    if (fn %in% c('pairs', 'stripchart')) {
-        doAddGrid <- FALSE
-        par(fg = fc)
-    } else {
-        if (panderOptions('graph.boxes'))
-            par(fg = gc)
-        else
-            par(fg = bc)
-    }
-
-    if (fn == 'pie')
-        mc$col <- cs
 
     ## call
     mc[[1]] <- fn.orig
     eval(mc, envir = parent.frame())
 
     ## grid
-    if (all(par()$mfrow == 1) & panderOptions('graph.grid') & doAddGrid) {
+    if (all(par()$mfrow == 1) & panderOptions('graph.grid') & doAddGrid & !(!is.null(mc$plot) && !mc$plot)) {
 
         g <- tryCatch(grid(lty = panderOptions('graph.grid.lty'), col = panderOptions('graph.grid.color'), lwd = 0.5), error = function(e) e)
         if (!inherits(g, 'error')) {
@@ -182,7 +190,8 @@ masked.plots$plot <- masked.plots$barplot <- masked.plots$lines <- masked.plots$
 #'
 #' \itemize{
 #'      \item \code{digits}: numeric (default: \code{2}) passed to \code{format}
-#'      \item \code{decimal.mark}: numeric (default: \code{.}) passed to \code{format}
+#'      \item \code{decimal.mark}: string (default: \code{.}) passed to \code{format}
+#'      \item \code{big.mark}: string (default: '') passed to \code{format}
 #'      \item \code{round}: numeric (default: \code{Inf}) passed to \code{round}
 #'      \item \code{keep.trailing.zeros}: boolean (default: \code{FALSE}) to show or remove trailing zeros in numbers
 #'      \item \code{date}: string (default: \code{'\%Y/\%m/\%d \%X'}) passed to \code{format} when printing dates (\code{POSIXct} or \code{POSIXt})
