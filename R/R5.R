@@ -2,7 +2,7 @@
 #'
 #' This \code{R5} reference class can hold bunch of elements (text or R objects) from which it tries to create a Pandoc's markdown text file. Exporting the report to several formats (like: pdf, docx, odt etc. - see Pandoc's documentation) is also possible, see examples below.
 #' @param ... this is an R5 object without any direct params but it should be documented, right?
-#' @export
+#' @export Pandoc
 #' @examples \dontrun{
 #' ## Initialize a new Pandoc object
 #' myReport <- Pandoc$new()
@@ -72,7 +72,7 @@ Pandoc$methods(initialize = function(author = 'Anonymous', title = base::sprintf
 Pandoc$methods(add = function(x) {
 
     timer           <- proc.time()
-    res             <- evals(deparse(match.call()[[2]]))
+    res             <- evals(deparse(match.call()[[2]]), env = parent.frame(), graph.name = evalsOptions('graph.name'), graph.dir = evalsOptions('graph.dir'), graph.output = evalsOptions('graph.output'), width = evalsOptions('width'), height = evalsOptions('height'))
     .self$body      <- c(.self$body, res)
     .self$proc.time <- .self$proc.time + as.numeric(proc.time() - timer)[3]
 
@@ -95,7 +95,12 @@ Pandoc$methods(show = function(x) {
 
         cat(pandoc.horizontal.rule())
 
-        lapply(.self$body, function(x) pander(x$result))
+        lapply(.self$body, function(x) {
+            for (m in c('messages', 'warnings', 'errors'))
+                if (!is.null(x$msg[[m]]))
+                    cat('\n**', toupper(sub('s$', '', m)), ':** ', x$msg[[m]], sep = '')
+            pander(x$result)
+        })
 
         ## show proc.time
         cat(pandoc.horizontal.rule())
@@ -106,7 +111,7 @@ Pandoc$methods(show = function(x) {
 
 })
 
-Pandoc$methods(export = function(f, open = TRUE, options = '', footer = TRUE) {
+Pandoc$methods(export = function(f, ...) {
 
     if (missing(f))
         f <- tempfile('pander-', getwd())
@@ -117,11 +122,8 @@ Pandoc$methods(export = function(f, open = TRUE, options = '', footer = TRUE) {
     cat(pandoc.title.return(.self$title, .self$author, .self$date), file = fp)
     lapply(.self$body, function(x) cat(paste(capture.output(pander(x$result)), collapse = '\n'), file = fp, append = TRUE))
 
-    ## remove extra line breaks
-    #cat(remove.extra.newlines(paste(readLines(fp, warn = FALSE), collapse = '\n')), file = fp)
-
     ## convert
-    fe <- Pandoc.convert(fp, format = .self$format, open = open, proc.time = as.numeric(proc.time() - timer)[3], options = options, footer = footer)
+    fe <- Pandoc.convert(fp, format = .self$format, proc.time = as.numeric(proc.time() - timer)[3], ...)
 
     ## return
     cat('\nExported to *', f, '.[md|', format, ']* under ', .self$proc.time + as.numeric(proc.time() - timer)[3], ' seconds.\n\n', sep = '')

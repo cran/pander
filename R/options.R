@@ -4,13 +4,16 @@
     options('pander' = list(
                 'digits'                   = 4,
                 'decimal.mark'             = '.',
+                'formula.caption.prefix'     = 'Formula: ',
                 'big.mark'                 = '',
                 'round'                    = Inf,
                 'keep.trailing.zeros'      = FALSE,
+                'keep.line.breaks'         = FALSE,
                 'date'                     = '%Y/%m/%d %X',
                 'header.style'             = 'atx',
                 'list.style'               = 'bullet',
                 'table.style'              = 'multiline',
+                'table.emphasize.rownames' = TRUE,
                 'table.split.table'        = 80,
                 'table.split.cells'        = 30,
                 'table.caption.prefix'     = 'Table: ',
@@ -18,10 +21,12 @@
                 'table.continues.affix'    = '(continued below)',
                 'table.alignment.default'  = 'centre',
                 'table.alignment.rownames' = 'centre',
+                'use.hyphening'            = FALSE,
                 'evals.messages'           = TRUE,
                 'p.wrap'                   = '_',
                 'p.sep'                    = ', ',
                 'p.copula'                 = ' and ',
+                'plain.ascii'              = FALSE,
                 'graph.nomargin'           = TRUE,
                 'graph.fontfamily'         = 'sans',
                 'graph.fontcolor'          = 'black',
@@ -37,7 +42,8 @@
                 'graph.colors'             = c("#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#999999", "#E69F00"),
                 'graph.color.rnd'          = FALSE,
                 'graph.axis.angle'         = 1,
-                'graph.symbol'             = 1
+                'graph.symbol'             = 1,
+                'knitr.auto.asis'          = TRUE
                 ))
 
     ## evals options
@@ -191,24 +197,29 @@ masked.plots$plot <- masked.plots$barplot <- masked.plots$lines <- masked.plots$
 #' \itemize{
 #'      \item \code{digits}: numeric (default: \code{2}) passed to \code{format}
 #'      \item \code{decimal.mark}: string (default: \code{.}) passed to \code{format}
+#'      \item \code{formula.caption.prefix}: string (default: \code{'Formula: '}) passed to \code{\link{pandoc.formula}} to be used as caption prefix. Be sure about what you are doing if changing to other than \code{'Formula: '} or \code{':'}.
 #'      \item \code{big.mark}: string (default: '') passed to \code{format}
 #'      \item \code{round}: numeric (default: \code{Inf}) passed to \code{round}
 #'      \item \code{keep.trailing.zeros}: boolean (default: \code{FALSE}) to show or remove trailing zeros in numbers
+#'      \item \code{keep.line.breaks}: boolean (default: \code{FALSE}) to keep or remove line breaks from cells in a table
 #'      \item \code{date}: string (default: \code{'\%Y/\%m/\%d \%X'}) passed to \code{format} when printing dates (\code{POSIXct} or \code{POSIXt})
 #'      \item \code{header.style}: \code{'atx'} or \code{'setext'} passed to \code{\link{pandoc.header}}
 #'      \item \code{list.style}: \code{'bullet'}, \code{'ordered'} or \code{'roman'} passed to \code{\link{pandoc.list}}. Please not that this has no effect on \code{pander} methods.
 #'      \item \code{table.style}: \code{'multiline'}, \code{'grid'}, \code{'simple'} or \code{'rmarkdown'} passed to \code{\link{pandoc.table}}
+#'      \item \code{table.emphasize.rownames}: boolean (default: \code{TRUE}) if row names should be highlighted
 #'      \item \code{table.split.table}: numeric passed to \code{\link{pandoc.table}} and also affects \code{pander} methods. This option tells \code{pander} where to split too wide tables. The default value (\code{80}) suggests the conventional number of characters used in a line, feel free to change (e.g. to \code{Inf} to disable this feature) if you are not using a VT100 terminal any more :)
-#'      \item \code{table.split.cells}: numeric (default: \code{30}) passed to \code{\link{pandoc.table}} and also affects \code{pander} methods. This option tells \code{pander} where to split too wide cells with line breaks. Set \code{Inf} to disable.
+#'      \item \code{table.split.cells}: numeric or numeric vector (default: \code{30}) passed to \code{\link{pandoc.table}} and also affects \code{pander} methods. This option tells \code{pander} where to split too wide cells with line breaks. Numeric vector specifies values for cells separately. Set \code{Inf} to disable.
 #'      \item \code{table.caption.prefix}: string (default: \code{'Table: '}) passed to \code{\link{pandoc.table}} to be used as caption prefix. Be sure about what you are doing if changing to other than \code{'Table: '} or \code{':'}.
 #'      \item \code{table.continues}: string (default: \code{'Table continues below'}) passed to \code{\link{pandoc.table}} to be used as caption for long (split) without a use defined caption
 #'      \item \code{table.continues.affix}: string (default: \code{'(continued below)'}) passed to \code{\link{pandoc.table}} to be used as an affix concatenated to the user defined caption for long (split) tables
 #'      \item \code{table.alignment.default}: string (default: \code{centre}) that defines the default alignment of cells. Can be \code{left}, \code{right} or \code{centre} that latter can be also spelled as \code{center}.
 #'      \item \code{table.alignment.rownames}: string (default: \code{centre}) that defines the alignment of rownames in tables. Can be \code{left}, \code{right} or \code{centre} that latter can be also spelled as \code{center}.
+#'      \item \code{use.hyphening}: boolean (default: \code{FALSE}) if try to use hyphening when splitting large cells according to table.split.cells. Requires koRpus package.
 #'      \item \code{evals.messages}: boolean (default: \code{TRUE}) passed to \code{evals}' \code{pander} method specifying if messages should be rendered
 #'      \item \code{p.wrap}: a string (default: \code{'_'}) to wrap vector elements passed to \code{p} function
 #'      \item \code{p.sep}: a string (default: \code{', '}) with the main separator passed to \code{p} function
 #'      \item \code{p.copula}: a string (default: \code{' and '}) with ending separator passed to \code{p} function
+#'      \item \code{plain.ascii}: boolean (default: \code{FALSE}) to define if output should be in plain ascii or not
 #'      \item \code{graph.nomargin}: boolean (default: \code{TRUE}) if trying to keep plots' margins at minimal
 #'      \item \code{graph.fontfamily}: string (default: \code{'sans'}) specifying the font family to be used in images. Please note, that using a custom font on Windows requires \code{grDevices:::windowsFonts} first.
 #'      \item \code{graph.fontcolor}: string (default: \code{'black'}) specifying the default font color
@@ -231,6 +242,7 @@ masked.plots$plot <- masked.plots$barplot <- masked.plots$lines <- masked.plots$
 #'              \item \code{4}: vertical.
 #'      }
 #'      \item \code{graph.symbol}: numeric (default: \code{1}) specifying a symbol (see the \code{pch} parameter of \code{par})
+#'      \item \code{knitr.auto.asis}: boolean (default: \code{TRUE}) if the results of \code{pander} should be considered as \code{'asis'} in \code{knitr}. Equals to specifying \code{results='asis'} in the R chunk, so thus there is no need to do so if set tot \code{TRUE}.
 #' }
 #' @param o option name (string). See below.
 #' @param value value to assign (optional)
@@ -299,7 +311,7 @@ pander.option <- function(x, ...) {
 #'      \item \code{graph.unify}: should \code{evals} try to unify the style of (\code{base}, \code{lattice} and \code{ggplot2}) plots? If set to \code{TRUE}, some \code{panderOptions()} would apply. By default this is disabled not to freak out useRs :)
 #'      \item \code{graph.name}: set the file name of saved plots which is \code{\link{tempfile}} by default. A simple character string might be provided where \code{\%d} would be replaced by the index of the generating \code{txt} source, \code{\%n} with an incremented integer in \code{graph.dir} with similar file names and \code{\%t} by some random characters. A function's name to be \code{eval}uated can be passed here too.
 #'      \item \code{graph.dir}: path to a directory where to place generated images. If the directory does not exist, \code{\link{evals}} try to create that. Default set to \code{plots} in current working directory.
-#'      \item \code{graph.output}: set the required file format of saved plots. Currently it could be any of  \code{grDevices}: \code{png}, \code{bmp}, \code{jpeg}, \code{jpg}, \code{tiff}, \code{svg} or \code{pdf}.
+#'      \item \code{graph.output}: set the required file format of saved plots. Currently it could be any of  \code{grDevices}: \code{png}, \code{bmp}, \code{jpeg}, \code{jpg}, \code{tiff}, \code{svg} or \code{pdf}. Set to \code{NA} not to save plots at all and tweak that setting with \code{capture.plot()} on demand.
 #'      \item \code{width}: width of generated plot in pixels for even vector formats
 #'      \item \code{height}: height of generated plot in pixels for even vector formats
 #'      \item \code{res}: nominal resolution in \code{ppi}. The height and width of vector images will be calculated based in this.

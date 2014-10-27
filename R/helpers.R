@@ -64,18 +64,21 @@ p <- function(x, wrap = panderOptions('p.wrap'), sep = panderOptions('p.sep'), c
     stopifnot(is.vector(x))
     stopifnot(all(sapply(list(wrap, sep, copula), function(x) is.character(x) && length(x) == 1)))
     x.len <- length(x)
-    stopifnot(x.len > 0)
+    if (x.len == 0)
+        return('')
     stopifnot(x.len <= limit)
 
     ## prettify numbers
     if (is.numeric(x)) {
 
         x <- round(x, panderOptions('round'))
-        x <- format(x, trim = TRUE, digits = panderOptions('digits'), decimal.mark = panderOptions('decimal.mark'))
 
-        ## optionally remove trailing zeros
+        ## optionally remove trailing zeros by running format separately on each element of the vector
         if (!keep.trailing.zeros)
-            x <- sub('(?:(\\..*[^0])0+|\\.0+)$', '\\1', x)
+            x <- sapply(x, format, trim = TRUE, digits = panderOptions('digits'), decimal.mark = panderOptions('decimal.mark'))
+        ## otherwise force using the same number format for all vector elements
+        else
+            x <- format(x, trim = TRUE, digits = panderOptions('digits'), decimal.mark = panderOptions('decimal.mark'))
 
     }
 
@@ -121,9 +124,13 @@ has.rownames <- function(x) {
 #'
 #' This is a helper function to add a caption to the returning image/table.
 #' @param x string
+#' @param permanent (default \code{FALSE}) if caption is permanent (for all future tables) or not
 #' @export
-set.caption <- function(x)
+set.caption <- function(x, permanent = FALSE){
     assign('caption', x , envir = storage)
+    if (!is.null(x))
+        attr(storage$caption, 'permanent') <- permanent
+}
 
 
 #' Get caption
@@ -140,9 +147,12 @@ get.caption <- function()
 #' This is a helper function to update the alignment (\code{justify} parameter of \code{pandoc.table}) of the returning table. Possible values are: \code{centre} or \code{center}, \code{right}, \code{left}.
 #' @param default character vector which length equals to one (would be repeated \code{n} times) ot \code{n} - where \code{n} equals to the number of columns in the following table
 #' @param row.names string holding the alignment of the (optional) row names
+#' @param permanent (default \code{FALSE}) if alignment is permanent (for all future tables) or not
 #' @export
-set.alignment <- function(default = 'centre', row.names = 'right')
+set.alignment <- function(default = 'centre', row.names = 'right', permanent = FALSE){
     assign('alignment', list(default = default, row.names = row.names) , envir = storage)
+    attr(storage$alignment, 'permanent') <- permanent
+}
 
 
 #' Get alignment
@@ -255,7 +265,8 @@ get.emphasize <- function(df) {
 #' @keywords internal
 get.storage <- function(what) {
     res <- tryCatch(get(what, envir = storage, inherits = FALSE), error = function(e) NULL)
-    assign(what, NULL , envir = storage)
+    if (is.null(attr(res, 'permanent')) || !attr(res, 'permanent'))
+        assign(what, NULL , envir = storage)
     return(res)
 }
 
@@ -296,3 +307,31 @@ cache.off <- function()
 #' @export
 cache.on <- function()
     evalsOptions('cache', TRUE)
+
+#' Split line with line breaks depending on max.width
+#'
+#' This is a helper function to insert line breaks depending on (\code{split.cells} parameter of \code{pandoc.table}) of the returning table.
+#' @param x string to be split. Works only with one string. Non-string arguments and multi-dimensional arguments are returned unchaged
+#' @param max.width default integer value specyfing max number of characters between line breaks
+#' @param use.hyphening (default: \code{FALSE}) if try to use hyphening when splitting large cells according to table.split.cells. Requires koRpus package.
+#' @return character string with line breaks
+#' @export
+#' @examples
+#' splitLine("foo bar", 6)
+#' splitLine("foo bar", 7)
+#' splitLine("Pandoc Package", 3, TRUE)
+splitLine <- function(x, max.width = panderOptions('table.split.cells'), use.hyphening = FALSE) {
+    if (any(is.na(x)))
+        return(x)
+    if (!is.character(x) || !is.null(dim(x)) || length(x) != 1 || x == "")
+        return(x)
+    if (suppressWarnings(!is.na(as.numeric(x))))
+        return(x)
+    if (is.infinite(max.width))
+        max.width <- .Machine$integer.max
+    if (use.hyphening && !requireNamespace('koRpus', quietly = TRUE))
+        use.hyphening <- FALSE
+    hyphen_f <- function(s)
+        koRpus::hyphen(s, hyph.pattern = 'en.us', quiet = TRUE)@hyphen[1, 2]
+    .Call('pander_splitLine_cpp', PACKAGE = 'pander', x, max.width, use.hyphening, hyphen_f)
+}
