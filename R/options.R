@@ -9,6 +9,7 @@
                 'round'                    = Inf,
                 'keep.trailing.zeros'      = FALSE,
                 'keep.line.breaks'         = FALSE,
+                'missing'                  = NA,
                 'date'                     = '%Y/%m/%d %X',
                 'header.style'             = 'atx',
                 'list.style'               = 'bullet',
@@ -43,7 +44,8 @@
                 'graph.color.rnd'          = FALSE,
                 'graph.axis.angle'         = 1,
                 'graph.symbol'             = 1,
-                'knitr.auto.asis'          = TRUE
+                'knitr.auto.asis'          = TRUE,
+                'pandoc.binary'            = Sys.which('pandoc')
                 ))
 
     ## evals options
@@ -202,6 +204,7 @@ masked.plots$plot <- masked.plots$barplot <- masked.plots$lines <- masked.plots$
 #'      \item \code{round}: numeric (default: \code{Inf}) passed to \code{round}
 #'      \item \code{keep.trailing.zeros}: boolean (default: \code{FALSE}) to show or remove trailing zeros in numbers
 #'      \item \code{keep.line.breaks}: boolean (default: \code{FALSE}) to keep or remove line breaks from cells in a table
+#'      \item \code{missing}: string (default: \code{NA}) to replace missing values in vectors, tables etc.
 #'      \item \code{date}: string (default: \code{'\%Y/\%m/\%d \%X'}) passed to \code{format} when printing dates (\code{POSIXct} or \code{POSIXt})
 #'      \item \code{header.style}: \code{'atx'} or \code{'setext'} passed to \code{\link{pandoc.header}}
 #'      \item \code{list.style}: \code{'bullet'}, \code{'ordered'} or \code{'roman'} passed to \code{\link{pandoc.list}}. Please not that this has no effect on \code{pander} methods.
@@ -243,12 +246,12 @@ masked.plots$plot <- masked.plots$barplot <- masked.plots$lines <- masked.plots$
 #'      }
 #'      \item \code{graph.symbol}: numeric (default: \code{1}) specifying a symbol (see the \code{pch} parameter of \code{par})
 #'      \item \code{knitr.auto.asis}: boolean (default: \code{TRUE}) if the results of \code{pander} should be considered as \code{'asis'} in \code{knitr}. Equals to specifying \code{results='asis'} in the R chunk, so thus there is no need to do so if set tot \code{TRUE}.
+#'      \item \code{pandoc.binary}: full path of \code{pandoc}'s binary. By default, \code{pandoc} is in the path.
 #' }
 #' @param o option name (string). See below.
 #' @param value value to assign (optional)
 #' @export
 #' @seealso \code{\link{evalsOptions}}
-#' @aliases pander.option
 #' @note \code{pander.option} is deprecated and is to be removed in future releases.
 #' @examples \dontrun{
 #' panderOptions()
@@ -284,12 +287,20 @@ panderOptions <- function(o, value) {
 
 }
 
+
+#' Deprecated panderOptions
+#' @usage pander.option(x, ...)
+#' @param x passed to \code{panderOptions}
+#' @param ... passed to \code{panderOptions}
 #' @export pander.option
+#' @seealso panderOptions
 pander.option <- function(x, ...) {
+    .Deprecated('panderOptions')
     mc <- match.call(panderOptions)
     mc[[1]] <- quote(panderOptions)
     eval(mc)
 }
+
 
 #' Querying/setting evals option
 #'

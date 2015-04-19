@@ -45,6 +45,7 @@ repChar <- function(x, n, sep = '')
 #' @param copula a string with ending separator - the one that separates the last two vector elements (uses the value set in \code{p.copula} option, \code{"and"} by default)
 #' @param limit maximum character length (defaults to \code{Inf}initive  elements)
 #' @param keep.trailing.zeros to show or remove trailing zeros in numbers
+#' @param missing string to replace missing values
 #' @return a string with concatenated vector contents
 #' @examples
 #' p(c("fee", "fi", "foo", "fam"))
@@ -57,8 +58,8 @@ repChar <- function(x, n, sep = '')
 #' ## [1] "Thelma & Louise"
 #' @export
 #' @author Aleksandar Blagotic
-#' @references This function was moved from \code{rapport} package: \url{http://rapport-package.info/}.
-p <- function(x, wrap = panderOptions('p.wrap'), sep = panderOptions('p.sep'), copula = panderOptions('p.copula'), limit = Inf, keep.trailing.zeros = panderOptions('keep.trailing.zeros')){
+#' @references This function was moved from \code{rapport} package: \url{http://rapport-package.info}.
+p <- function(x, wrap = panderOptions('p.wrap'), sep = panderOptions('p.sep'), copula = panderOptions('p.copula'), limit = Inf, keep.trailing.zeros = panderOptions('keep.trailing.zeros'), missing = panderOptions('missing')){
 
     attributes(x) <- NULL
     stopifnot(is.vector(x))
@@ -67,6 +68,9 @@ p <- function(x, wrap = panderOptions('p.wrap'), sep = panderOptions('p.sep'), c
     if (x.len == 0)
         return('')
     stopifnot(x.len <= limit)
+
+    ## store missing values
+    w <- which(is.na(x))
 
     ## prettify numbers
     if (is.numeric(x)) {
@@ -81,6 +85,10 @@ p <- function(x, wrap = panderOptions('p.wrap'), sep = panderOptions('p.sep'), c
             x <- format(x, trim = TRUE, digits = panderOptions('digits'), decimal.mark = panderOptions('decimal.mark'))
 
     }
+
+    ## replace missing values
+    if (length(w) > 0)
+        x[w] <- missing
 
     if (x.len == 1)
         wrap(x, wrap)
@@ -103,7 +111,7 @@ p <- function(x, wrap = panderOptions('p.wrap'), sep = panderOptions('p.sep'), c
 #' }
 #' @export
 #' @author Aleksandar Blagotic
-#' @references This function was moved from \code{rapport} package: \url{http://rapport-package.info/}.
+#' @references This function was moved from \code{rapport} package: \url{http://rapport-package.info}.
 wrap <- function(x, wrap = '"'){
     attributes(x) <- NULL
     stopifnot(is.vector(x))
@@ -144,12 +152,12 @@ get.caption <- function()
 
 #' Sets alignment for tables
 #'
-#' This is a helper function to update the alignment (\code{justify} parameter of \code{pandoc.table}) of the returning table. Possible values are: \code{centre} or \code{center}, \code{right}, \code{left}.
+#' This is a helper function to update the alignment (\code{justify} parameter in \code{pandoc.table}) of the next returning table. Possible values are: \code{centre} or \code{center}, \code{right}, \code{left}.
 #' @param default character vector which length equals to one (would be repeated \code{n} times) ot \code{n} - where \code{n} equals to the number of columns in the following table
 #' @param row.names string holding the alignment of the (optional) row names
-#' @param permanent (default \code{FALSE}) if alignment is permanent (for all future tables) or not
+#' @param permanent (default \code{FALSE}) if alignment is permanent (for all future tables) or not. It's cleaner to use \code{panderOptions} instead.
 #' @export
-set.alignment <- function(default = 'centre', row.names = 'right', permanent = FALSE){
+set.alignment <- function(default = panderOptions('table.alignment.default'), row.names = panderOptions('table.alignment.rownames'), permanent = FALSE) {
     assign('alignment', list(default = default, row.names = row.names) , envir = storage)
     attr(storage$alignment, 'permanent') <- permanent
 }
@@ -334,4 +342,18 @@ splitLine <- function(x, max.width = panderOptions('table.split.cells'), use.hyp
     hyphen_f <- function(s)
         koRpus::hyphen(s, hyph.pattern = 'en.us', quiet = TRUE)@hyphen[1, 2]
     .Call('pander_splitLine_cpp', PACKAGE = 'pander', x, max.width, use.hyphening, hyphen_f)
+}
+
+
+#' Check if caption is valid
+#' @param caption R object to check
+#' @return boolean
+#' @keywords internal
+check_caption <- function(caption) {
+
+    if (length(caption) > 1)
+        stop('The caption should be exactly one string.')
+
+    if (!(is.character(caption) | is.null(caption)))
+        stop('The caption should be string (character class) or NULL.')
 }
