@@ -1,10 +1,9 @@
-.onLoad <- function(libname, pkgname)
-{
+.onLoad <- function(libname, pkgname) {
     ## pander settings
     options('pander' = list(
                 'digits'                   = 4,
                 'decimal.mark'             = '.',
-                'formula.caption.prefix'     = 'Formula: ',
+                'formula.caption.prefix'   = 'Formula: ',
                 'big.mark'                 = '',
                 'round'                    = Inf,
                 'keep.trailing.zeros'      = FALSE,
@@ -40,7 +39,7 @@
                 'graph.legend.position'    = 'right',
                 'graph.background'         = 'white',
                 'graph.panel.background'   = 'transparent',
-                'graph.colors'             = c("#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#999999", "#E69F00"),
+                'graph.colors'             = c("#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#999999", "#E69F00"), #nolint
                 'graph.color.rnd'          = FALSE,
                 'graph.axis.angle'         = 1,
                 'graph.symbol'             = 1,
@@ -71,7 +70,8 @@
                 'hi.res.width'          = 960,
                 'graph.env'             = FALSE,
                 'graph.recordplot'      = FALSE,
-                'graph.RDS'             = FALSE
+                'graph.RDS'             = FALSE,
+                'log'                   = NULL
                 ))
 }
 
@@ -84,8 +84,8 @@ debug$nested      <- 0
 debug$nestedID    <- 0
 
 ## cache storage
-cached.results <- new.env()
-cached.environments <- new.env()
+cached.results <- new.env() # cache of results from evals
+cached.environments <- new.env() # cache of changes to the environment (assignments in particular)
 
 ## cache hash storage
 hash.cache.obj       <- new.env() # raw R objects of which hash was computed before
@@ -94,7 +94,7 @@ hash.cache.last.used <- new.env() # when was the hash last queried
 
 ## masked plots
 masked.plots <- new.env()
-masked.plots$plot <- masked.plots$barplot <- masked.plots$lines <- masked.plots$pie <- masked.plots$boxplot <- masked.plots$polygon <- masked.plots$points <- masked.plots$legend <- masked.plots$hist <- masked.plots$pairs <- masked.plots$stripchart <- masked.plots$clusplot <- masked.plots$text <- function (...) {
+masked.plots$plot <- masked.plots$barplot <- masked.plots$lines <- masked.plots$pie <- masked.plots$boxplot <- masked.plots$polygon <- masked.plots$points <- masked.plots$legend <- masked.plots$hist <- masked.plots$pairs <- masked.plots$stripchart <- masked.plots$clusplot <- masked.plots$text <- function (...) { #nolint
 
     mc      <- match.call()
     fn      <- deparse(mc[[1]])
@@ -109,7 +109,7 @@ masked.plots$plot <- masked.plots$barplot <- masked.plots$lines <- masked.plots$
         fbs <- panderOptions('graph.fontsize')
         bc  <- panderOptions('graph.background')
         gc  <- panderOptions('graph.grid.color')
-        cex <- fbs/12
+        cex <- fbs / 12
         cs <- panderOptions('graph.colors')
         if (panderOptions('graph.color.rnd'))
             cs <- sample(cs)
@@ -120,7 +120,7 @@ masked.plots$plot <- masked.plots$barplot <- masked.plots$lines <- masked.plots$
             par(
                 family   = panderOptions('graph.fontfamily'),
                 cex      = cex, cex.axis = cex * 0.8, cex.lab = cex, cex.main = cex * 1.2, cex.sub = cex,
-                bg       = bc, # TODO: how could we color only the inner plot area globally? Not like: https://stat.ethz.ch/pipermail/r-help/2003-May/033971.html
+                bg       = bc, # nolint TODO: how could we color only the inner plot area globally? Not like: https://stat.ethz.ch/pipermail/r-help/2003-May/033971.html
                 las      = panderOptions('graph.axis.angle'),
                 lwd      = 2,
                 pch      = panderOptions('graph.symbol'),
@@ -178,13 +178,16 @@ masked.plots$plot <- masked.plots$barplot <- masked.plots$lines <- masked.plots$
     ## grid
     if (all(par()$mfrow == 1) & panderOptions('graph.grid') & doAddGrid & !(!is.null(mc$plot) && !mc$plot)) {
 
-        g <- tryCatch(grid(lty = panderOptions('graph.grid.lty'), col = panderOptions('graph.grid.color'), lwd = 0.5), error = function(e) e)
+        g <- tryCatch(grid(lty = panderOptions('graph.grid.lty'),
+                           col = panderOptions('graph.grid.color'),
+                           lwd = 0.5),
+                      error = function(e) e)
         if (!inherits(g, 'error')) {
             if (panderOptions('graph.grid.minor'))
                 g <- tryCatch(add.minor.ticks(2, 2, grid = TRUE), error = function(e) e)
         }
         if (inherits(g, 'error'))
-            warning('Applying default formatting to image is somehow compromised (the result could differ from what you specified in `panderOptions`). Hints: printing `lattice`/`ggplot2` is not needed and tweaking `base` plots with `par` might have some side-effects!')
+            warning('Applying default formatting to image is somehow compromised (the result could differ from what you specified in `panderOptions`). Hints: printing `lattice`/`ggplot2` is not needed and tweaking `base` plots with `par` might have some side-effects!') #nolint
 
     }
 }
@@ -197,11 +200,11 @@ masked.plots$plot <- masked.plots$barplot <- masked.plots$lines <- masked.plots$
 #' The following \code{pander} options are available:
 #'
 #' \itemize{
-#'      \item \code{digits}: numeric (default: \code{2}) passed to \code{format}
+#'      \item \code{digits}: numeric (default: \code{2}) passed to \code{format}. Can be a vector specifying values for each column (has to be the same length as number of columns). Values for non-numeric columns will be disregarded.
 #'      \item \code{decimal.mark}: string (default: \code{.}) passed to \code{format}
 #'      \item \code{formula.caption.prefix}: string (default: \code{'Formula: '}) passed to \code{\link{pandoc.formula}} to be used as caption prefix. Be sure about what you are doing if changing to other than \code{'Formula: '} or \code{':'}.
-#'      \item \code{big.mark}: string (default: '') passed to \code{format}
-#'      \item \code{round}: numeric (default: \code{Inf}) passed to \code{round}
+#'      \item \code{big.mark}: string (default: '') passed to \code{format}.
+#'      \item \code{round}: numeric (default: \code{Inf}) passed to \code{round}. Can be a vector specifying values for each column (has to be the same length as number of columns). Values for non-numeric columns will be disregarded.
 #'      \item \code{keep.trailing.zeros}: boolean (default: \code{FALSE}) to show or remove trailing zeros in numbers
 #'      \item \code{keep.line.breaks}: boolean (default: \code{FALSE}) to keep or remove line breaks from cells in a table
 #'      \item \code{missing}: string (default: \code{NA}) to replace missing values in vectors, tables etc.
@@ -252,7 +255,6 @@ masked.plots$plot <- masked.plots$barplot <- masked.plots$lines <- masked.plots$
 #' @param value value to assign (optional)
 #' @export
 #' @seealso \code{\link{evalsOptions}}
-#' @note \code{pander.option} is deprecated and is to be removed in future releases.
 #' @examples \dontrun{
 #' panderOptions()
 #' panderOptions('digits')
@@ -280,25 +282,17 @@ panderOptions <- function(o, value) {
         if (!o %in% names(res))
             stop(paste('Invalid option name:', o))
 
-        res[[o]] <- value
+        ## fix assigning NULL to a list element
+        if (is.null(value)) {
+            res[o] <- list(NULL)
+        } else {
+            res[[o]] <- value
+        }
+
         options('pander' = res)
 
     }
 
-}
-
-
-#' Deprecated panderOptions
-#' @usage pander.option(x, ...)
-#' @param x passed to \code{panderOptions}
-#' @param ... passed to \code{panderOptions}
-#' @export pander.option
-#' @seealso panderOptions
-pander.option <- function(x, ...) {
-    .Deprecated('panderOptions')
-    mc <- match.call(panderOptions)
-    mc[[1]] <- quote(panderOptions)
-    eval(mc)
 }
 
 
@@ -316,10 +310,10 @@ pander.option <- function(x, ...) {
 #'      \item \code{cache.time}: number of seconds to limit caching based on \code{proc.time}. If set to \code{0}, all R commands, if set to \code{Inf}, none is cached (despite the \code{cache} parameter).
 #'      \item \code{cache.copy.images}: copy images to new files if an image is returned from cache? If set to \code{FALSE} (default) the "old" path would be returned.
 #'      \item \code{classes}: a vector or list of classes which should be returned. If set to \code{NULL} (by default) all R objects will be returned.
-#'      \item \code{hooks}: list of hooks to be run for given classes in the form of \code{list(class = fn)}. If you would also specify some parameters of the function, a list should be provided in the form of \code{list(fn, param1, param2=NULL)} etc. So the hooks would become \code{list(class1=list(fn, param1, param2=NULL), ...)}. See examples of \code{\link{evals}}. A default hook can be specified too by setting the class to \code{'default'}. This can be handy if you do not want to define separate methods/functions to each possible class, but automatically apply the default hook to all classes not mentioned in the list. You may also specify only one element in the list like: \code{hooks=list('default' = pander.return)}. Please note, that nor error/warning messages, nor stdout is captured (so: updated) while running hooks!
+#'      \item \code{hooks}: list of hooks to be run for given classes in the form of \code{list(class = fn)}. If you would also specify some parameters of the function, a list should be provided in the form of \code{list(fn, param1, param2=NULL)} etc. So the hooks would become \code{list(class1=list(fn, param1, param2=NULL), ...)}. See examples of \code{\link{evals}}. A default hook can be specified too by setting the class to \code{'default'}. This can be handy if you do not want to define separate methods/functions to each possible class, but automatically apply the default hook to all classes not mentioned in the list. You may also specify only one element in the list like: \code{hooks=list('default' = pander_return)}. Please note, that nor error/warning messages, nor stdout is captured (so: updated) while running hooks!
 #'      \item \code{length}: any R object exceeding the specified length will not be returned. The default value (\code{Inf}) does not filter out any R objects.
 #'      \item \code{output}: a character vector of required returned values. This might be useful if you are only interested in the \code{result}, and do not want to save/see e.g. \code{messages} or \code{print}ed \code{output}. See examples of \code{\link{evals}}.
-#'      \item \code{graph.unify}: should \code{evals} try to unify the style of (\code{base}, \code{lattice} and \code{ggplot2}) plots? If set to \code{TRUE}, some \code{panderOptions()} would apply. By default this is disabled not to freak out useRs :)
+#'      \item \code{graph.unify}: boolean (default: \code{FALSE}) that determines if \code{evals} should try to unify the style of (\code{base}, \code{lattice} and \code{ggplot2}) plots? If set to \code{TRUE}, some \code{panderOptions()} would apply.
 #'      \item \code{graph.name}: set the file name of saved plots which is \code{\link{tempfile}} by default. A simple character string might be provided where \code{\%d} would be replaced by the index of the generating \code{txt} source, \code{\%n} with an incremented integer in \code{graph.dir} with similar file names and \code{\%t} by some random characters. A function's name to be \code{eval}uated can be passed here too.
 #'      \item \code{graph.dir}: path to a directory where to place generated images. If the directory does not exist, \code{\link{evals}} try to create that. Default set to \code{plots} in current working directory.
 #'      \item \code{graph.output}: set the required file format of saved plots. Currently it could be any of  \code{grDevices}: \code{png}, \code{bmp}, \code{jpeg}, \code{jpg}, \code{tiff}, \code{svg} or \code{pdf}. Set to \code{NA} not to save plots at all and tweak that setting with \code{capture.plot()} on demand.
@@ -331,13 +325,12 @@ pander.option <- function(x, ...) {
 #'      \item \code{graph.env}: save the environments in which plots were generated to distinct files (based on \code{graph.name}) with \code{env} extension?
 #'      \item \code{graph.recordplot}: save the plot via \code{recordPlot} to distinct files (based on \code{graph.name}) with \code{recodplot} extension?
 #'      \item \code{graph.RDS}: save the raw R object returned (usually with \code{lattice} or \code{ggplot2}) while generating the plots to distinct files (based on \code{graph.name}) with \code{RDS} extension?
+#'      \item \code{log}: \code{NULL} or  an optionally passed \emph{logger name} from \pkg{futile.logger} to record all info, trace, debug and error messages.
 #' }
 #' @param o option name (string). See below.
 #' @param value value to assign (optional)
 #' @export
 #' @seealso \code{\link{evals}} \code{\link{panderOptions}}
-#' @note \code{evals.option} is deprecated and is to be removed in future releases.
-#' @aliases evals.option
 #' @examples
 #' evalsOptions()
 #' evalsOptions('cache')
@@ -364,12 +357,15 @@ evalsOptions <- function(o, value) {
         if (!o %in% names(res))
             stop(paste('Invalid option name:', o))
 
-        res[[o]] <- value
+        ## fix assigning NULL to a list element
+        if (is.null(value)) {
+            res[o] <- list(NULL)
+        } else {
+            res[[o]] <- value
+        }
+
         options('evals' = res)
 
     }
 
 }
-
-#' @export
-evals.option <- evalsOptions
