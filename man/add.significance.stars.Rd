@@ -4,10 +4,12 @@
 \alias{add.significance.stars}
 \title{Add significance stars}
 \usage{
-add.significance.stars(p)
+add.significance.stars(p, cutoffs = c(0.05, 0.01, 0.001))
 }
 \arguments{
 \item{p}{numeric vector or tabular data}
+
+\item{cutoffs}{the cutoffs for the 1/2/3 significance stars}
 }
 \value{
 character vector
@@ -15,4 +17,3 @@ character vector
 \description{
 This function adds significance stars to passed \code{p} value(s) as: one star for value below \code{0.05}, two for \code{0.01} and three for \code{0.001}.
 }
-

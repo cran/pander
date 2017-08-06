@@ -48,14 +48,14 @@
 #' ## Exporting to PDF (default)
 #' myReport$export()
 #'
-#' ## Or to docx in tempdir():
+#' ## Or to docx in tempdir:
 #' myReport$format <- 'docx'
 #' myReport$export(tempfile())
 #'
 #' ## You do not want to see the generated report after generation?
 #' myReport$export(open = FALSE)
 #' }
-#' @importFrom methods setRefClass new
+#' @importFrom methods setRefClass new getGeneric
 Pandoc <- setRefClass('Pandoc', fields = list('author' = 'character',
                                               'title' = 'character',
                                               'date' = 'character',

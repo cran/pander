@@ -4,11 +4,11 @@ The main aim of the *pander* [R](http://r-project.org) package is to provide a m
 
 Current build and test coverage status: [![](https://travis-ci.org/Rapporter/pander.png?branch=master)](https://travis-ci.org/Rapporter/pander) [![](http://codecov.io/github/Rapporter/pander/coverage.svg?branch=master)](http://codecov.io/github/Rapporter/pander?branch=master).
 
-Some CRAN statistics: [![](http://cranlogs.r-pkg.org/badges/pander)](http://cran.rstudio.com/web/packages/pander/index.html) [![](http://cranlogs.r-pkg.org/badges/grand-total/pander)](http://cran.rstudio.com/web/packages/pander/index.html)
+Some CRAN statistics: [![](http://cranlogs.r-pkg.org/badges/pander)](https://cran.r-project.org/package=pander) [![](http://cranlogs.r-pkg.org/badges/grand-total/pander)](https://cran.r-project.org/package=pander)
 
 # Installation
 
-The stable version [![](http://www.r-pkg.org/badges/version/pander)](http://https://cran.r-project.org/package=pander) can be installed easily in the `R` console like any other package:
+The stable version [![](http://www.r-pkg.org/badges/version/pander)](https://cran.r-project.org/package=pander) can be installed easily in the `R` console like any other package:
 
 ```r
 install.packages('pander')
@@ -20,7 +20,7 @@ On the other hand, I welcome everyone to use the most recent version of the pack
 devtools::install_github('Rapporter/pander')
 ```
 
-Or download the [sources](https://github.com/Rapporter/pander/zipball/master) and build manually. If you're running R on Windows, you will need to install [Rtools](http://cran.stat.ucla.edu/bin/windows/Rtools/).
+Or download the [sources](https://github.com/Rapporter/pander/zipball/master) and build manually. If you're running R on Windows, you will need to install [Rtools](https://cran.r-project.org/bin/windows/Rtools/).
 
 ## Dependencies
 
@@ -132,11 +132,11 @@ Please note that all below features are also supported by the more concise `pand
 
 ## Formats
 
-All [four Pandoc formats](http://johnmacfarlane.net/pandoc/README.html#tables) are supported by *pander*. From those (*multiline*, *simple*, *grid*, *pipe/rmarkdown*), I'd suggest sticking to the default `multiline` format with the most features, although `rmarkdown` v1.0 fanatics might better like the `pipe` table format. Please see a few examples below:
+All [four Pandoc formats](http://johnmacfarlane.net/pandoc/README.html#tables) are supported by *pander*. From those (*multiline*, *simple*, *grid*, *pipe/rmarkdown*), I'd suggest sticking to the default `multiline` format with the most features, except when using `rmarkdown` v1.0 or jupyter notebook, where `multiline` is not supported (for this end the default table format is `rmarkdown` when `pander` is called inside of a jupyter notebook). Please see a few examples below:
 
 <a id="multiline-table"></a>
 
-The default style is the [`multiline` format](http://johnmacfarlane.net/pandoc/README.html#multiline-tables) as most features (e.g. multi-line cells and alignment) are supported:
+The default style is the [`multiline` format](http://johnmacfarlane.net/pandoc/README.html#multiline-tables) (except for calling `pander` inside of a of a jupyter notebook) as most features (e.g. multi-line cells and alignment) are supported:
 
 ```rout
 > m <- mtcars[1:2, 1:3]
@@ -564,23 +564,23 @@ A nested list can be seen above with a table and all (optional) list names. As a
 
   * **residuals**:
 
-    --------------------------------------------------
-    &nbsp;    3            4                 5
-    ------- ------ ----------------- -----------------
-     **0**  2.042  -1.17073226447712 -1.72300609401128
+    ----------------------------
+    &nbsp;    3      4      5
+    ------- ------ ------ ------
+     **0**  2.042  -1.171 -1.723
 
-     **1**  -2.469 1.41534629268074  2.08301279585419
-    --------------------------------------------------
+     **1**  -2.469 1.415  2.083
+    ----------------------------
 
   * **stdres**:
 
-    -------------------------------------------------
-    &nbsp;    3            4                5
-    ------- ------ ----------------- ----------------
-     **0**  4.395  -2.32338345119108 -2.9429523715087
+    ----------------------------
+    &nbsp;    3      4      5
+    ------- ------ ------ ------
+     **0**  4.395  -2.323 -2.943
 
-     **1**  -4.395 2.32338345119108  2.9429523715087
-    -------------------------------------------------
+     **1**  -4.395 2.323  2.943
+    ----------------------------
 
 <!-- end of list -->
 
@@ -627,6 +627,8 @@ Table: Welch Two Sample t-test: `extra` by `group`
 --------------------------------------------------------------
      &nbsp;        Estimate   Std. Error   z value   Pr(>|z|) 
 ----------------- ---------- ------------ --------- ----------
+ **(Intercept)**    3.045       0.1709      17.81   5.427e-71 
+
   **outcome2**     -0.4543      0.2022     -2.247    0.02465  
 
   **outcome3**      -0.293      0.1927      -1.52     0.1285  
@@ -634,8 +636,6 @@ Table: Welch Two Sample t-test: `extra` by `group`
  **treatment2**   1.338e-15      0.2      6.69e-15      1     
 
  **treatment3**   1.421e-15      0.2      7.105e-15     1     
-
- **(Intercept)**    3.045       0.1709      17.81   5.427e-71 
 --------------------------------------------------------------
 
 Table: Fitting generalized (poisson/log) linear model: counts ~ outcome + treatment
@@ -975,7 +975,7 @@ So instead of a captured R object (which would be `NULL` in this situation by th
 
 ![](https://raw.githubusercontent.com/Rapporter/pander/gh-pages/plots/graphs-1.png)
 
-Well, this is not a standard histogram usually returned by the `hist` function, right? As mentioned before, `evals` have some extra features like applying the user defined theme on various plots automatically. Please see the `graphs.brew` example [above](#examples) for further details, or check the related [global options](#evals-options). If you do not like this feature, simply add `evalsOptions('graph.unify`, FALSE)` to your `.Rprofile`.
+Well, this is not a standard histogram usually returned by the `hist` function, right? As mentioned before, `evals` have some extra features like applying the user defined theme on various plots automatically. Please see the `graphs.brew` example [above](#examples) for further details, or check the related [global options](#evals-options). If you do not like this feature, simply add `evalsOptions('graph.unify', FALSE)` to your `.Rprofile`.
 
 Further features are described in the [technical docs](http://www.rdocumentation.org/packages/pander/functions/evals), and now I'll only give a brief introduction to another important feature of `evals`.
 
@@ -987,7 +987,7 @@ As `pander::evals` is using a **custom caching algorithm** in the means of evalu
   * Each parsed expression's **part** (let it be a function, variable, constant etc.) is evaluated (as `name`) separately to a `list`. This list describes the unique structure *and* the content of the passed R expressions. This has some really great benefits (see below).
   * A **hash** is computed of each list element and *cached* too in `pander`'s local environments. This is useful if you are using large data frames, just imagine: the caching algorithm would have to compute the hash for the same data frame each time it's touched! This way the hash is recomputed only if the R object with the given name is changed.
   * The list of such R objects is serialized, then an `SHA-1` hash is computed, which is unique and there is no real risk of collision.
-  * If [`evals`](#evals) can find the cached results in an environment of `pander`'s namespace (if `cache.mode` set to `enviroment` - see [below](#pander-options)) or in a file named to the computed hash (if `ċache.mode` set to `disk`), then it is returned on the spot. *The objects modified/created by the cached code are also updated.*
+  * If [`evals`](#evals) can find the cached results in an environment of `pander`'s namespace (if `cache.mode` set to `enviroment` - see [below](#pander-options)) or in a file named to the computed hash (if `cache.mode` set to `disk`), then it is returned on the spot. *The objects modified/created by the cached code are also updated.*
   * Otherwise the call is evaluated and the results and the modified R objects of the environment are optionally saved to cache (e.g. if `cache` is active *and* if the `proc.time()` of the evaluation is higher then it is defined in `cache.time` - see details in [evals' options](#evals-options)).
 
 <a id="in-practice"></a>
@@ -1064,7 +1064,7 @@ The package comes with a variety of globally adjustable options, which have an e
   * `digits`: numeric (default: `2`) passed to `format`.  Can be a vector specifying values for each column (has to be the same length as number of columns). Values for non-numeric columns will be disregarded.
   * `decimal.mark`: string (default: `.`) passed to `format`
   * `formula.caption.prefix`: string (default: `Formula: `) passed to `pandoc.formula` to be used as caption prefix. Be sure about what you are doing if changing to other than `Formula: ` or `:`.
-  * `big.mark`: string (default: ``) passed to `format`
+  * `big.mark`: string (default: `''`) passed to `format`
   * `round`: numeric (default: `Inf`) passed to `round`. Can be a vector specifying values for each column (has to be the same length as number of columns). Values for non-numeric columns will be disregarded.
   * `keep.trailing.zeros`: boolean (default: `FALSE`) show or remove trailing zeros in numbers (e.g. in numeric vectors or in columns of tables with numeric values)
   * `keep.line.breaks`: boolean (default: `FALSE`) to keep or remove line breaks from cells in a table
@@ -1109,7 +1109,7 @@ The package comes with a variety of globally adjustable options, which have an e
       *  `4`: vertical.
 
   * `graph.symbol`: numeric (default: `1`) specifying a symbol (see the `pch` parameter of `par`)
-  * `knitr.auto.asis`: boolean (default: `TRUE`) if the results of `pander` should be considered as `asis` in `knitr`. Equals to specifying `results='asis'` in the R chunk, so thus there is no need to do so if set tot `TRUE`.
+  * `knitr.auto.asis`: boolean (default: `TRUE`) if the results of `pander` should be considered as `asis` in `knitr`. Equals to specifying `results='asis'` in the R chunk, so thus there is no need to do so if set to `TRUE`.
 
 <a id='evals-options'></a><a id='evalsoptions'></a>
 
@@ -1175,8 +1175,6 @@ Few options of `pander-mode`: `M-x customize-group pander`
   * `pander-show-source`: If non-nil then the source of R commands would also show up in generated documents while running 'pander-eval'. This would not affect `brew` functions ATM.
 
 To use this small lib, just type: `M-x pander-mode` on any document. It might be useful to add a hook to `markdown-mode` if you find this useful.
-
-![](https://cruel-carlota.gopagoda.com/9dfac0c1da37bd83d1848289630631fd "githalytics.com")
 
 <script type="text/javascript">
     $(document).ready(function() {

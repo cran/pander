@@ -12,7 +12,11 @@
                 'date'                     = '%Y/%m/%d %X',
                 'header.style'             = 'atx',
                 'list.style'               = 'bullet',
-                'table.style'              = 'multiline',
+                'table.style'              = ifelse(
+                    getOption('jupyter.in_kernel', FALSE),
+                    ## The jupyter notebook does not understand the multiline table format
+                    'rmarkdown',
+                    'multiline'),
                 'table.emphasize.rownames' = TRUE,
                 'table.split.table'        = 80,
                 'table.split.cells'        = 30,
@@ -248,7 +252,7 @@ masked.plots$plot <- masked.plots$barplot <- masked.plots$lines <- masked.plots$
 #'              \item \code{4}: vertical.
 #'      }
 #'      \item \code{graph.symbol}: numeric (default: \code{1}) specifying a symbol (see the \code{pch} parameter of \code{par})
-#'      \item \code{knitr.auto.asis}: boolean (default: \code{TRUE}) if the results of \code{pander} should be considered as \code{'asis'} in \code{knitr}. Equals to specifying \code{results='asis'} in the R chunk, so thus there is no need to do so if set tot \code{TRUE}.
+#'      \item \code{knitr.auto.asis}: boolean (default: \code{TRUE}) if the results of \code{pander} should be considered as \code{'asis'} in \code{knitr}. Equals to specifying \code{results='asis'} in the R chunk, so thus there is no need to do so if set to \code{TRUE}.
 #'      \item \code{pandoc.binary}: full path of \code{pandoc}'s binary. By default, \code{pandoc} is in the path.
 #' }
 #' @param o option name (string). See below.

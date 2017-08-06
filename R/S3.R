@@ -7,8 +7,8 @@
 #' @note This function can be called by \code{pander} and \code{pandoc} too.
 #' @references \itemize{
 #'   \item John MacFarlane (2013): _Pandoc User's Guide_. \url{http://johnmacfarlane.net/pandoc/README.html}
-#'   \item David Hajage (2011): _ascii. Export R objects to several markup languages._ \url{http://CRAN.R-project.org/package=ascii}
-#'   \item Hlavac, Marek (2013): _stargazer: LaTeX code for well-formatted regression and summary statistics tables._ \url{http://CRAN.R-project.org/package=stargazer}
+#'   \item David Hajage (2011): _ascii. Export R objects to several markup languages._ \url{https://cran.r-project.org/package=ascii}
+#'   \item Hlavac, Marek (2013): _stargazer: LaTeX code for well-formatted regression and summary statistics tables._ \url{https://cran.r-project.org/package=stargazer}
 #' }
 #' @export
 #' @examples
@@ -96,7 +96,7 @@ pander <- function(x = NULL, ...) {
             sink(type = 'message')
             close(con)
 
-            ## re-add the final line-break
+            ## restore the final line break
             if (tail(stdout, 1) == '') {
                 stdout <- c(stdout, '')
             }
@@ -238,6 +238,31 @@ pander.table <- function(x, caption = attr(x, 'caption'), ...) {
 
 }
 
+#' Pander method for data.table class
+#'
+#' Prints a data.table object in Pandoc's markdown. Data.tables drop attributes (like row names) when called.
+#' @param x a data.table object
+#' @param caption caption (string) to be shown under the table
+#' @param keys.as.row.names controls whether to use data.table key as row names when calling pandoc.table
+#' @param ... optional parameters passed to raw \code{pandoc.table} function
+#' @export
+pander.data.table <- function(x, caption = attr(x, 'caption'),
+                              keys.as.row.names = TRUE, ...) {
+
+    if (is.null(caption) & !is.null(storage$caption)) {
+        caption <- get.caption()
+    }
+
+    requireNamespace('data.table', quietly = TRUE)
+    if (keys.as.row.names && data.table::haskey(x)) {
+        row.names.dt <- x[[data.table::key(x)[1]]]
+        x <- x[, setdiff(colnames(x), data.table::key(x)[1]), with = FALSE]
+        data.table::setattr(x, 'row.names', row.names.dt)
+    }
+
+    pandoc.table(x, caption = caption, ...)
+
+}
 
 #' Pander method for data.frame class
 #'
@@ -299,11 +324,12 @@ pander.cast_df <- function(x, caption = attr(x, 'caption'), ...) {
 #' @param omit vector of variable to omit for priting in resulting table
 #' @param summary (defaut:\code{TRUE}) if used for summary.lm or lm
 #' @param add.significance.stars if significance stars should be shown for P value
+#' @param move.intercept by default, the Intercept is the first coefficient in the table, which can be moved to the bottom of the table
 #' @param ... optional parameters passed to special methods and/or raw \code{pandoc.*} functions
 #' @return By default this function outputs (see: \code{cat}) the result. If you would want to catch the result instead, then call the function ending in \code{.return}.
 #' @export
 pander.summary.lm <- function(x, caption = attr(x, 'caption'), covariate.labels,
-                              omit, summary = TRUE, add.significance.stars = FALSE, ...) {
+                              omit, summary = TRUE, add.significance.stars = FALSE, move.intercept = FALSE, ...) {
 
     if (is.null(caption)) {
         if (is.null(storage$caption)) {
@@ -315,7 +341,7 @@ pander.summary.lm <- function(x, caption = attr(x, 'caption'), covariate.labels,
 
     res <- as.data.frame(x$coeff)
 
-    if (nrow(res) > 1) {
+    if (move.intercept && rownames(res)[1] == '(Intercept)' & nrow(res) > 1) {
         res <- res[c(2:nrow(res), 1), ]
     }
 
@@ -328,7 +354,7 @@ pander.summary.lm <- function(x, caption = attr(x, 'caption'), covariate.labels,
     }
 
     if (add.significance.stars) {
-        res <- cbind(res, ' '=add.significance.stars(res[, 4]))
+        res <- cbind(res, ' ' = add.significance.stars(res[, 4]))
     }
 
     if (summary) {
@@ -474,11 +500,11 @@ pander.anova <- function(x, caption = attr(x, 'caption'), add.significance.stars
         caption <- get.caption()
     }
     if (add.significance.stars) {
-        x[, 5] <- add.significance.stars(x[, 5])
+        x <- cbind(x, ' ' = add.significance.stars(x[, 5]))
     }
     pandoc.table(x, caption = caption, ...)
     if (add.significance.stars) {
-        cat('Signif. codes:  0 \'***\' 0.001 \'**\' 0.01 \'*\' 0.05 \'.\' 0.1 \' \' 1\n')
+        cat('Signif. codes:  0 \'\\*\\*\\*\' 0.001 \'\\*\\*\' 0.01 \'\\*\' 0.05 \'.\' 0.1 \' \' 1\n')
     }
 }
 
@@ -527,7 +553,7 @@ pander.htest <- function(x, caption = attr(x, 'caption'), ...) {
 
     if (is.null(caption)) {
         if (is.null(storage$caption)) {
-            caption <- paste0(x$method, ': `', gsub('( and | by )', '`\\1`', x$data.name), '`')
+            caption <- paste0(x$method, ': `', gsub('( and | by )', '`\\1`', paste(x$data.name, collapse='')), '`')
         } else {
             caption <- get.caption()
         }
@@ -547,12 +573,19 @@ pander.htest <- function(x, caption = attr(x, 'caption'), ...) {
         res$'P value' <- paste(
           format(round(x$p.value, panderOptions('round')),
                  trim         = TRUE,
-                 digits       = panderOptions("digits"),
-                 decimal.mark = panderOptions("decimal.mark")),
+                 digits       = panderOptions('digits'),
+                 decimal.mark = panderOptions('decimal.mark')),
           add.significance.stars(x$p.value))
     }
     if (!is.null(x$alternative)) {
         res['Alternative hypothesis'] <- x$alternative
+    }
+    if (!is.null(x$estimate)) {
+        if (!is.null(names(x$estimate))) {
+            res[names(x$estimate)] <- x$estimate
+        } else {
+            res['Estimate'] <- x$estimate
+        }
     }
 
     ## drop placeholder
@@ -704,7 +737,7 @@ pander.evals <- function(x, ...) {
 
     o <- pander(x$result)
 
-    if(panderOptions('evals.messages')) {
+    if (panderOptions('evals.messages')) {
         if (!is.null(x$msg$messages)) {
             o <- paste0(o, ' **MESSAGE**', pandoc.footnote.return(x$msg$messages))
         }
@@ -770,57 +803,6 @@ pander.Date <- function(x, ...)
 pander.ftable <- function(x, ...)
     pandoc.table(x, ...)
 
-
-#' Pander method for mtable class
-#'
-#' Prints a mtable object in Pandoc's markdown.
-#' @param x a mtable object
-#' @param caption caption (string) to be shown under the table
-#' @param ... optional parameters passed to raw \code{pandoc.table} function
-#' @export
-#' @importFrom stats ftable
-pander.mtable <- function(x, caption = attr(x, 'caption'), ...) {
-    if (is.null(caption) & !is.null(storage$caption)) {
-        caption <- get.caption()
-    }
-    horizontal <- FALSE
-    coefs <- ftable(as.table(x$coefficients), row.vars = rev(x$as.row), col.vars = rev(x$as.col))
-    col.size <- ifelse(length(dimnames(x$coefficients)) > 3, length(dimnames(x$coefficients)[[4]]), 1)
-    row.size <- length(dimnames(x$coefficients)[[3]])
-    nrows.coefs <- nrow(coefs)
-    k <- nrows.coefs / row.size
-    if (k == 1) {
-        horizontal <- TRUE
-    }
-
-    zeros <- rep(0, (col.size) * (row.size))
-    temp <- matrix(zeros, ncol = (col.size))
-    temp <- as.table(temp)
-
-    if (horizontal) {
-        for (i in 1:row.size) {
-            s <- coefs[i, ]
-            tmp.row <- vector()
-            for (j in 1:col.size) {
-                tmp.row <- c(tmp.row, paste(s[2 * j - 1], s[2 * j], sep = '\\ \n'))
-            }
-            temp[i, ] <- tmp.row
-        }
-    } else {
-        for (i in 1:row.size) {
-            tmp.row <- vector()
-            s <- as.matrix(coefs[ (i * k - k + 1) : (i * k), ])
-            for (j in 1:col.size) {
-                tmp.row <- c(tmp.row, paste(s[,j], collapse = '\\ \n'))
-            }
-            temp[i, ] <- tmp.row
-        }
-    }
-    temp <- rbind(temp, x$summaries)
-    rownames(temp) <- c(dimnames(x$coefficients)[[3]], rownames(x$summaries))
-    colnames(temp) <- colnames(x$summaries)
-    pandoc.table(temp, caption = caption, keep.line.breaks = TRUE, ...)
-}
 
 #' Pander method for CrossTable class
 #'
@@ -941,7 +923,7 @@ pander.CrossTable <- function(x, caption = attr(x, 'caption'), digits = panderOp
     len <- dim(nt)[1]
     rownames(nt) <- as.character(1:len)
 
-    # merging and print
+    ## merging and print
     ts <- ifelse(!is.na(x$prop.col[1]), 2, 1)
     or <- (nrow(nt) - ts) / nr
     nt.nr <- nrow(nt)
@@ -955,12 +937,12 @@ pander.CrossTable <- function(x, caption = attr(x, 'caption'), digits = panderOp
     for (i in 1:nr) {
         res.r <- paste(pandoc.strong.return(nt[1 + or * (i - 1), 1]),
                        'N',
-                       paste(nt[ (2 + or * (i - 1)) : (i * or), 1],collapse = '\\ \n'),
+                       paste(nt[ (2 + or * (i - 1)) : (i * or), 1], collapse = '\\ \n'),
                    sep = '\\ \n')
         for (j in 2:nc) {
             res.r <- cbind(res.r,
                            paste('&nbsp;',
-                                 paste(nt[ (1 + or * (i - 1)) : (i * or),j], collapse = '\\  \n'),
+                                 paste(nt[ (1 + or * (i - 1)) : (i * or), j], collapse = '\\  \n'),
                                  sep = '\\ \n'))
         }
         res <- rbind(res, res.r)
@@ -977,11 +959,11 @@ pander.CrossTable <- function(x, caption = attr(x, 'caption'), digits = panderOp
         cln <- c(cln, 'Total')
     }
     if (ColData != '') {
-        cln.t <- paste(c('&nbsp;', ColData, rep('&nbsp;', nc - 2)), rep('\\\n', nc - 1), sep='')
-        cln <- paste(cln.t, cln, sep='')
+        cln.t <- paste(c('&nbsp;', ColData, rep('&nbsp;', nc - 2)), rep('\\\n', nc - 1), sep = '')
+        cln <- paste(cln.t, cln, sep = '')
     }
     colnames(res) <- cln
-    pandoc.table(res, caption = caption, keep.line.breaks = TRUE,...)
+    pandoc.table(res, caption = caption, keep.line.breaks = TRUE, ...)
 }
 
 
@@ -1589,7 +1571,7 @@ pander.tabular <- function(x, caption = attr(x, 'caption'),
     clabels <- attr(x, 'colLabels')
     clabels[is.na(clabels)] <- ''
     if (!is.null(colnames(rlabels))) {
-        # needed for case of more complex tabular structure (see examples)
+        ## needed for case of more complex tabular structure (see examples)
         cl <- colnames(rlabels)
         data <- cbind(rlabels, data)
         clabels <- cbind(rbind(matrix('',
@@ -1631,8 +1613,8 @@ pander.summary.table <- function(x, caption = attr(x, 'caption'), print.call = T
     cat('Number of factors:', x$n.vars, '\n')
     if (x$n.vars > 1) {
         ch <- x$statistic
-        tdf <- data.frame('Chisq'=ch, 'df'=x$parameter, 'p-value'=x$p.value)
-        pandoc.table(tdf, caption=caption, ...)
+        tdf <- data.frame('Chisq' = ch, 'df' = x$parameter, 'p-value' = x$p.value)
+        pandoc.table(tdf, caption = caption, ...)
         if (!x$approx.ok) {
             cat('Chi-squared approximation may be incorrect\n')
         }
@@ -1819,7 +1801,7 @@ pander.nls <- function(x, digits = panderOptions('digits'), show.convergence = F
 #' @param se if to include standard error in coefficients table (default \code{TRUE})
 #' @param ... optional parameters passed to raw \code{pandoc.table} function
 #' @export
-pander.Arima <- function(x, digits = panderOptions('digits'), se = TRUE,...) {
+pander.Arima <- function(x, digits = panderOptions('digits'), se = TRUE, ...) {
     cat('\nCall:', pandoc.formula.return(x$call), '', sep = '\n')
     cn <- names(x$coef)
     coef <- matrix(x$coef, nrow = 1)
@@ -1895,9 +1877,9 @@ pander.ols <- function (x, long = FALSE, coefs = TRUE,
     lrchisq <- stats['Model L.R.']
     ci <- x$clusterInfo
     if (lst <- length(stats)) {
-        misc <- rms::reVector(Obs = stats['n'], sigma = sigma, d.f. = df[2], `Cluster on` = ci$name, Clusters = ci$n) #nolint
-        lr <- rms::reVector(`LR chi2` = lrchisq, d.f. = ndf, `Pr(> chi2)` = 1 - pchisq(lrchisq, ndf)) #nolint
-        disc <- rms::reVector(R2 = r2, `R2 adj` = rsqa, g = stats['g']) #nolint
+        misc <- rms::reListclean(Obs = stats['n'], sigma = sigma, d.f. = df[2], `Cluster on` = ci$name, Clusters = ci$n) #nolint
+        lr <- rms::reListclean(`LR chi2` = lrchisq, d.f. = ndf, `Pr(> chi2)` = 1 - pchisq(lrchisq, ndf)) #nolint
+        disc <- rms::reListclean(R2 = r2, `R2 adj` = rsqa, g = stats['g']) #nolint
         sdf <- multitable(list(misc, lr, disc))
         colnames(sdf) <- c('', 'Model Likelihood\nRatio Test', 'Discrimination\nIndexes')
         caption <- pandoc.formula.return(x$call$formula, text = 'Fitting linear model:')
@@ -1934,7 +1916,7 @@ pander.ols <- function (x, long = FALSE, coefs = TRUE,
             correl[ll] <- format(round(correl[ll], digits = round), digits = digits, ...)
             correl[!ll] <- ''
             pandoc.table(correl[-1, - (p + 1), drop = FALSE],
-                         caption ='Correlation of Coefficients',
+                         caption = 'Correlation of Coefficients',
                          digits = digits,
                          round = round, ...)
         }
@@ -1956,12 +1938,12 @@ pander.summary.polr <- function(x, digits = panderOptions('digits'), round = pan
     }
     pc <- x$pc
     if (pc > 0) {
-        pander(x$coefficients[seq_len(pc), , drop = FALSE], caption = 'Coeficients',
+        pander(x$coefficients[seq_len(pc), , drop = FALSE], caption = 'Coeficients', #nolint
                digits = digits, round = round, keep.trailing.zeros = keep.trailing.zeros, ...)
     } else {
         cat('\nNo coefficients\n')
     }
-    pander(x$coefficients[ (pc + 1L):nrow(x$coefficients), , drop = FALSE], caption = 'Intercepts',
+    pander(x$coefficients[ (pc + 1L):nrow(x$coefficients), , drop = FALSE], caption = 'Intercepts', #nolint
           digits = digits, round = round, keep.trailing.zeros = keep.trailing.zeros, ...)
     cat('\nResidual Deviance:', format(x$deviance, nsmall = 2L), '\n\n')
     cat('AIC:', format(x$deviance + 2 * x$edf, nsmall = 2L), '\n\n')
@@ -1970,7 +1952,7 @@ pander.summary.polr <- function(x, digits = panderOptions('digits'), round = pan
     }
     if (!is.null(correl <- x$correlation)) {
         ll <- lower.tri(correl)
-        correl <- apply(correl, c(1,2),
+        correl <- apply(correl, c(1, 2),
                         p, wrap = '', digits = digits, round = round, keep.trailing.zeros = keep.trailing.zeros)
         correl[!ll] <- ''
         pander(correl[-1L, -ncol(correl)],
@@ -2019,7 +2001,7 @@ pander.summary.survreg <- function(x, summary = TRUE, digits = panderOptions('di
                 sep = '')
         }
         pandoc.table(coef, caption = 'Coefficients',
-                     digits = digits, round = round, keep.trailing.zeros = keep.trailing.zeros,...)
+                     digits = digits, round = round, keep.trailing.zeros = keep.trailing.zeros, ...)
 
     }
     if (nrow(x$var) == length(coef)) {
@@ -2032,10 +2014,10 @@ pander.summary.survreg <- function(x, summary = TRUE, digits = panderOptions('di
     nobs <- length(x$linear)
     chi <- 2 * diff(x$loglik)
     df <- sum(x$df) - x$idf
-    pandoc.table(data.frame('Loglik(model)'=x$loglik[2], 'Loglik(intercept only)'=x$loglik[1]), ...)
+    pandoc.table(data.frame('Loglik(model)' = x$loglik[2], 'Loglik(intercept only)' = x$loglik[1]), ...)
     if (df > 0) {
         cat('Chisq=', p(chi, wrap = ''), 'on', p(df, wrap = ''),
-            'degrees of freedom, p=',p(signif(1 - pchisq(chi, df), 2), wrap = ''), '\n\n')
+            'degrees of freedom, p=', p(signif(1 - pchisq(chi, df), 2), wrap = ''), '\n\n')
     } else {
         cat('\n')
     }
@@ -2043,7 +2025,7 @@ pander.summary.survreg <- function(x, summary = TRUE, digits = panderOptions('di
         if (x$robust) {
             cat('(Loglikelihood assumes independent observations)\n\n')
         }
-        cat('Number of Newton-Raphson Iterations:', p(trunc(x$iter), wrap =),'\n\n')
+        cat('Number of Newton-Raphson Iterations:', p(trunc(x$iter), wrap =), '\n\n') #nolint
     }
     omit <- x$na.action
     if (length(omit)) {
@@ -2056,7 +2038,7 @@ pander.summary.survreg <- function(x, summary = TRUE, digits = panderOptions('di
             p <- dim(correl)[2]
             if (p > 1) {
                 ll <- lower.tri(correl)
-                correl <- apply(correl, c(1,2),
+                correl <- apply(correl, c(1, 2),
                                 p, wrap = '', digits = digits, round = round, keep.trailing.zeros = keep.trailing.zeros)
                 correl[!ll] <- ''
                 pander(correl[-1L, -ncol(correl)],
@@ -2098,7 +2080,7 @@ pander.lrm <- function (x, coefs = TRUE, ...)  {
     stats <- x$stats
     maxd <- signif(stats['Max Deriv'], 1)
     ci <- x$clusterInfo
-    misc <- rms::reVector(Obs = stats['Obs'],
+    misc <- rms::reListclean(Obs = stats['Obs'],
                      `Sum of weights` = stats['Sum of Weights'],
                      Strata = if (nstrata > 1) nstrata,
                      `Cluster on` = ci$name, Clusters = ci$n,
@@ -2107,13 +2089,13 @@ pander.lrm <- function (x, coefs = TRUE, ...)  {
         names(x$freq) <- paste(' ', names(x$freq), sep = '')
         misc <- c(misc[1], x$freq, misc[-1])
     }
-    lr <- rms::reVector(`LR chi2` = stats['Model L.R.'],
+    lr <- rms::reListclean(`LR chi2` = stats['Model L.R.'],
                    d.f. = stats['d.f.'],
                    `Pr(> chi2)` = stats['P'],
                    Penalty = penaltyFactor)
-    disc <- rms::reVector(R2 = stats['R2'], g = stats['g'], gr = stats['gr'],
+    disc <- rms::reListclean(R2 = stats['R2'], g = stats['g'], gr = stats['gr'],
                      gp = stats['gp'], Brier = stats['Brier'])
-    discr <- rms::reVector(C = stats['C'], Dxy = stats['Dxy'], gamma = stats['Gamma'],
+    discr <- rms::reListclean(C = stats['C'], Dxy = stats['Dxy'], gamma = stats['Gamma'],
                       `tau-a` = stats['Tau-a'])
     sdf <- multitable(list(misc, lr, disc, discr))
     colnames(sdf) <- c('', 'Model Likelihood\nRatio Test',
@@ -2170,21 +2152,21 @@ pander.orm <- function (x, coefs = TRUE, intercepts = x$non.slopes < 10, ...) {
     stats <- x$stats
     maxd <- signif(stats['Max Deriv'], 1)
     ci <- x$clusterInfo
-    misc <- rms::reVector(Obs = stats['Obs'], `Unique Y` = stats['Unique Y'],
+    misc <- rms::reListclean(Obs = stats['Obs'], `Unique Y` = stats['Unique Y'],
                      `Cluster on` = ci$name, Clusters = ci$n, `Median Y` = stats['Median Y'],
                      `max |deriv|` = maxd)
     if (length(x$freq) < 4) {
         names(x$freq) <- paste(' ', names(x$freq), sep = '')
         misc <- c(misc[1], x$freq, misc[-1])
     }
-    lr <- rms::reVector(`LR chi2` = stats['Model L.R.'], #nolint
+    lr <- rms::reListclean(`LR chi2` = stats['Model L.R.'], #nolint
                    d.f. = stats['d.f.'],
                    `Pr(> chi2)` = stats['P'],
                    `Score chi2` = stats['Score'],
                    `Pr(> chi2)` = stats['Score P'], Penalty = penaltyFactor)
-    disc <- rms::reVector(R2 = stats['R2'], g = stats['g'], gr = stats['gr'], #nolint
+    disc <- rms::reListclean(R2 = stats['R2'], g = stats['g'], gr = stats['gr'], #nolint
                      `|Pr(Y>=median)-0.5|` = stats['pdm'])
-    discr <- rms::reVector(rho = stats['rho']) #nolint
+    discr <- rms::reListclean(rho = stats['rho']) #nolint
     sdf <- multitable(list(misc, lr, disc, discr))
     colnames(sdf) <- c('', 'Model Likelihood\nRatio Test',
                        'Discrimination\nIndexes', 'Rank Discrim.\nIndexes')
@@ -2224,9 +2206,9 @@ pander.Glm <- function (x, coefs = TRUE, ...) {
     dof <- x$rank - (names(cof)[1] == 'Intercept')
     pval <- 1 - pchisq(lr, dof)
     ci <- x$clusterInfo
-    misc <- rms::reVector(Obs = length(x$residuals), `Residual d.f.` = x$df.residual,
+    misc <- rms::reListclean(Obs = length(x$residuals), `Residual d.f.` = x$df.residual,
                      `Cluster on` = ci$name, Clusters = ci$n, g = x$g)
-    lr <- rms::reVector(`LR chi2` = lr, d.f. = dof, `Pr(> chi2)` = pval) #nolint
+    lr <- rms::reListclean(`LR chi2` = lr, d.f. = dof, `Pr(> chi2)` = pval) #nolint
     sdf <- multitable(list(misc, lr))
     colnames(sdf) <- c('', 'Model Likelihood\nRatio Test')
     caption <- pandoc.formula.return(x$call$formula, text = 'General Linear Model')
@@ -2256,13 +2238,13 @@ pander.cph <- function (x, table = TRUE, conf.int = FALSE, coefs = TRUE, ...) {
     if (length(x$coef)) {
         stats <- x$stats
         ci <- x$clusterInfo
-        misc <- rms::reVector(Obs = stats['Obs'], Events = stats['Events'],
+        misc <- rms::reListclean(Obs = stats['Obs'], Events = stats['Events'],
                          `Cluster on` = ci$name, Clusters = ci$n,
                          Center = x$center)
-        lr <- rms::reVector(`LR chi2` = stats['Model L.R.'], d.f. = stats['d.f.'],
+        lr <- rms::reListclean(`LR chi2` = stats['Model L.R.'], d.f. = stats['d.f.'],
                        `Pr(> chi2)` = stats['P'], `Score chi2` = stats['Score'],
                        `Pr(> chi2)` = stats['Score P'])
-        disc <- rms::reVector(R2 = stats['R2'], Dxy = stats['Dxy'],
+        disc <- rms::reListclean(R2 = stats['R2'], Dxy = stats['Dxy'],
                          g = stats['g'], gr = stats['gr'])
         sdf <- multitable(list(misc, lr, disc))
         colnames(sdf) <- c('', 'Model Likelihood\nRatio Test',
@@ -2283,7 +2265,7 @@ pander.cph <- function (x, table = TRUE, conf.int = FALSE, coefs = TRUE, ...) {
                          exp(beta - zcrit * se),
                          exp(beta + zcrit * se))
             dimnames(tmp) <- list(names(beta),
-                                  c('exp(coef)','exp(-coef)',
+                                  c('exp(coef)', 'exp(-coef)',
                                     paste('lower ', p(conf.int, wrap = ''), sep = ''),
                                     paste('upper ', p(conf.int, wrap = ''), sep = '')))
             pandoc.table(tmp, caption = 'Confidence interval', ...)
@@ -2301,7 +2283,7 @@ pander.summary.rms <- function (x, ...) {
     for (i in 1:7) cstats <- cbind(cstats, signif(x[, i], 5))
     dimnames(cstats) <- list(rep('', nrow(cstats)), c('Factor', dimnames(x)[[2]][1:7]))
     pandoc.table(cstats, ...)
-    if ((A <- attr(x, 'adjust')) != '')
+    if ( (A <- attr(x, 'adjust')) != '')
         cat('\nAdjusted to:', A, '\n')
     blab <- switch(attr(x, 'conf.type'),
                    `bootstrap nonparametric percentile` = 'Bootstrap nonparametric percentile confidence intervals',
@@ -2313,4 +2295,41 @@ pander.summary.rms <- function (x, ...) {
     }
     cat('\n')
     invisible()
+}
+
+#' Prints an ets object from forecast package in Pandoc's markdown.
+#' @param x an ets object
+#' @param digits number of digits of precision
+#' @param ... optional parameters passed to raw \code{pandoc.table} function
+#' @export
+pander.ets <- function(x, digits = panderOptions('digits'), ...) {
+    cat('\nCall:', pandoc.formula.return(x$call), '', sep = '\n')
+    cat('Type of ets: ', x$method, '\n', sep = '')
+    lambda <- x$lambda
+    isn <- names(x$initstate)
+    initstate <- matrix(x$initstate, nrow = 1)
+    colnames(initstate) <- isn
+    sp <- x$par['alpha']
+    if (x$components[2] != 'N'){
+        sp <- c(sp, x$par['beta'])
+    }
+    if (x$components[3] != 'N'){
+        sp <- c(sp, x$par['gamma'])
+    }
+    if (x$components[4] != 'FALSE'){
+        sp <- c(sp, x$par['phi'])
+    }
+    if (!is.null(lambda)){
+        cat('\nBox-Cox transformation: lambda =', round(lambda, panderOptions('digits')), '\n')
+    }
+    pandoc.table(sp, caption = 'Smoothing parameters', digits = digits, ...)
+    pandoc.table(initstate, caption = 'Initial states', digits = digits, ...)
+    cat('\nsigma^2 estimated as', format(x$sigma2, digits = digits))
+    if (!is.null(x$loglik)){
+        cat(': log likelihood = ', format(round(x$loglik, 2)))
+    }
+    if (!is.null(x$aic)){
+        cat(', aic = ', format(round(x$aic, 2)), '\n', sep = '')
+    }
+    invisible(x)
 }
