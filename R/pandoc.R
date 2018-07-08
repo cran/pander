@@ -343,11 +343,13 @@ pandoc.title.return <- function(author = '', title = '', date = '') {
         stop('You cannot create a title with only date specified!')
     }
     ## updating title tags
-    if (author != '') {
-        author <- paste('%', paste(author, collapse = '; '))
+    if (length(author) > 1 && author != '') {
+        author <- paste('%', paste(author[author != ''], collapse = '; '))
     }
-    if (title != '') {
-        title  <- paste0('% ', gsub('[\t ][\t ]*', '  ', gsub('\n', '\n  ', paste(title, collapse = '\n'))))
+    if (length(title) > 1 && title != '') {
+        title  <- paste0(
+            '% ',
+            gsub('[\t ][\t ]*', '  ', gsub('\n', '\n  ', paste(title[title != ''], collapse = '\n'))))
     }
 
     ## formatting result
@@ -633,6 +635,8 @@ pandoc.list <- function(...)
 #' pandoc.table(x, split.cells = 10, use.hyphening = TRUE)
 pandoc.table.return <- function(t, caption, digits = panderOptions('digits'), decimal.mark = panderOptions('decimal.mark'), big.mark = panderOptions('big.mark'), round = panderOptions('round'), missing = panderOptions('missing'), justify, style = c('multiline', 'grid', 'simple', 'rmarkdown'), split.tables = panderOptions('table.split.table'), split.cells = panderOptions('table.split.cells'), keep.trailing.zeros = panderOptions('keep.trailing.zeros'), keep.line.breaks = panderOptions('keep.line.breaks'), plain.ascii = panderOptions('plain.ascii'), use.hyphening = panderOptions('use.hyphening'), row.names, col.names, emphasize.rownames = panderOptions('table.emphasize.rownames'), emphasize.rows, emphasize.cols, emphasize.cells, emphasize.strong.rows, emphasize.strong.cols, emphasize.strong.cells, emphasize.italics.rows, emphasize.italics.cols, emphasize.italics.cells, emphasize.verbatim.rows, emphasize.verbatim.cols, emphasize.verbatim.cells, ...) { #nolint
 
+    row.names.provided <- !missing(row.names)
+
     ## expands cells for output
     table.expand <- function(cells, cols.width, justify, sep.cols) {
         .Call('pander_tableExpand_cpp', PACKAGE = 'pander', cells, cols.width, justify, sep.cols, style)
@@ -885,9 +889,10 @@ pandoc.table.return <- function(t, caption, digits = panderOptions('digits'), de
     } else {
         style <- match.arg(style)
     }
-    if (!missing(row.names)) {
-      if (row.names[1] == FALSE) {
+    if (row.names.provided) {
+      if (identical(row.names, FALSE)) {
         rownames(t) <- NULL
+        row.names.provided <- FALSE
       } else {
         rownames(t) <- row.names
       }
@@ -898,9 +903,9 @@ pandoc.table.return <- function(t, caption, digits = panderOptions('digits'), de
     if (is.null(mc$justify)) {
         if (is.null(attr(t, 'alignment'))) {
             if (inherits(t, 'ftable')) {
-                justify <- get.alignment(format(t))
+                justify <- get.alignment(format(t), remove.obious.rownames = !row.names.provided)
             } else {
-                justify <- get.alignment(t)
+                justify <- get.alignment(t, remove.obious.rownames = !row.names.provided)
             }
         } else {
             justify <- attr(t, 'alignment')
@@ -972,6 +977,12 @@ pandoc.table.return <- function(t, caption, digits = panderOptions('digits'), de
     }
     t.n <- which(sapply(1:ncol(t), function(x) is.numeric(t[, x])))
     if (length(t.n) > 0) {
+        ## make sure it's numeric (eg convert integer64 first as sapply having issues)
+        ## see eg: sapply(bit64::as.integer64(1:5), format)
+        for (j in t.n) {
+            t[, j] <- as.numeric(t[, j])
+        }
+        ## round digits as needed
         round <- check_digits(round, 'round', ncol(t))
         ## for-loop is needed to preserve row/col names and use index to get appropriate value from round vector
         for (j in 1:ncol(temp.t)) {
@@ -1131,7 +1142,8 @@ pandoc.table.return <- function(t, caption, digits = panderOptions('digits'), de
     t.width <-  as.numeric(apply(cbind(t.colnames.width, apply(t, 2, function(x) max(sapply(strsplit(x,'\n'), function(x) max(nchar(x, type = 'width'), 0))))), 1, max)) #nolint
 
     ## remove obvious row.names
-    if (all(t.rownames == 1:nrow(t)) | all(t.rownames == '')) {
+    if ((!row.names.provided && (all(t.rownames == 1:nrow(t)) | all(t.rownames == ''))) |
+        row.names.provided && row.names == FALSE) {
         t.rownames <- NULL
     }
 
