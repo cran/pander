@@ -396,6 +396,7 @@ pandoc.title <- function(...)
 #' @param add.end.of.list adding a separator comment after the list
 #' @param indent.level the level of indent
 #' @param missing string to replace missing values
+#' @param ... extra arguments passed by from parent call, disregarded
 #' @return By default this function outputs (see: \code{cat}) the result. If you would want to catch the result instead, then call the function ending in \code{.return}.
 #' @export
 #' @aliases pandoc.list
@@ -422,7 +423,7 @@ pandoc.title <- function(...)
 #' pandoc.list(list('one', list('two')))
 #' pandoc.list(list('one', list(2:3)))
 #' @importFrom utils as.roman
-pandoc.list.return <- function(elements, style = c('bullet', 'ordered', 'roman'), loose = FALSE, add.line.breaks = TRUE, add.end.of.list = TRUE, indent.level = 0, missing = panderOptions('missing')) { #nolint
+pandoc.list.return <- function(elements, style = c('bullet', 'ordered', 'roman'), loose = FALSE, add.line.breaks = TRUE, add.end.of.list = TRUE, indent.level = 0, missing = panderOptions('missing'), ...) { #nolint
 
     ## checks
     if (!is.logical(loose)) {
@@ -506,7 +507,7 @@ pandoc.list <- function(...)
 #' @param keep.trailing.zeros to show or remove trailing zeros in numbers on a column basis width
 #' @param keep.line.breaks (default: \code{FALSE}) if to keep or remove line breaks from cells in a table
 #' @param plain.ascii (default: \code{FALSE}) if output should be in plain ascii (without markdown markup) or not
-#' @param use.hyphening boolean (default: \code{FALSE}) if try to use hyphening when splitting large cells according to table.split.cells. Requires koRpus package.
+#' @param use.hyphening boolean (default: \code{FALSE}) if try to use hyphening when splitting large cells according to table.split.cells. Requires \pkg{sylly}.
 #' @param row.names if \code{FALSE}, row names are suppressed. A character vector of row names can also be specified here. By default, row names are included if \code{rownames(t)} is neither
 #'   \code{NULL} nor identical to \code{1:nrow(x)}
 #' @param col.names a character vector of column names to be used in the table
@@ -633,7 +634,7 @@ pandoc.list <- function(...)
 #' x <- data.frame(a = "Can be also supplied as a vector, for each cell separately",
 #'        b = "Can be also supplied as a vector, for each cell separately")
 #' pandoc.table(x, split.cells = 10, use.hyphening = TRUE)
-pandoc.table.return <- function(t, caption, digits = panderOptions('digits'), decimal.mark = panderOptions('decimal.mark'), big.mark = panderOptions('big.mark'), round = panderOptions('round'), missing = panderOptions('missing'), justify, style = c('multiline', 'grid', 'simple', 'rmarkdown'), split.tables = panderOptions('table.split.table'), split.cells = panderOptions('table.split.cells'), keep.trailing.zeros = panderOptions('keep.trailing.zeros'), keep.line.breaks = panderOptions('keep.line.breaks'), plain.ascii = panderOptions('plain.ascii'), use.hyphening = panderOptions('use.hyphening'), row.names, col.names, emphasize.rownames = panderOptions('table.emphasize.rownames'), emphasize.rows, emphasize.cols, emphasize.cells, emphasize.strong.rows, emphasize.strong.cols, emphasize.strong.cells, emphasize.italics.rows, emphasize.italics.cols, emphasize.italics.cells, emphasize.verbatim.rows, emphasize.verbatim.cols, emphasize.verbatim.cells, ...) { #nolint
+pandoc.table.return <- function(t, caption, digits = panderOptions('digits'), decimal.mark = panderOptions('decimal.mark'), big.mark = panderOptions('big.mark'), round = panderOptions('round'), missing = panderOptions('missing'), justify, style = c('multiline', 'grid', 'simple', 'rmarkdown', 'jira'), split.tables = panderOptions('table.split.table'), split.cells = panderOptions('table.split.cells'), keep.trailing.zeros = panderOptions('keep.trailing.zeros'), keep.line.breaks = panderOptions('keep.line.breaks'), plain.ascii = panderOptions('plain.ascii'), use.hyphening = panderOptions('use.hyphening'), row.names, col.names, emphasize.rownames = panderOptions('table.emphasize.rownames'), emphasize.rows, emphasize.cols, emphasize.cells, emphasize.strong.rows, emphasize.strong.cols, emphasize.strong.cells, emphasize.italics.rows, emphasize.italics.cols, emphasize.italics.cells, emphasize.verbatim.rows, emphasize.verbatim.cols, emphasize.verbatim.cells, ...) { #nolint
 
     row.names.provided <- !missing(row.names)
 
@@ -1193,6 +1194,33 @@ pandoc.table.return <- function(t, caption, digits = panderOptions('digits'), de
     }
 
     ## #########################################################################
+    ## Jira format is simple, let's print early
+    ## #########################################################################
+
+    if (style == 'jira') {
+
+        if (length(t.rownames) != 0) {
+            t <- cbind(t.rownames, t)
+        }
+
+        if (length(t.colnames) != 0) {
+            res <- paste0('|', paste(wrap(t.colnames, '|'), collapse = ''), '|')
+        } else {
+            res <- ''
+        }
+
+        for (i in seq_len(nrow(t))) {
+            res <- paste0(res, '\n|')
+            for (j in seq_len(ncol(t))) {
+                res <- paste0(res, t[i, j], '|')
+            }
+        }
+
+        return(paste0(res, '\n\n'))
+
+    }
+
+    ## #########################################################################
     ## split too wide tables
     ## #########################################################################
 
@@ -1353,13 +1381,14 @@ pandoc.table <- function(...)
 #' @param max.width maximum width in characters per line
 #' @param caption caption (string) to be shown under the formula
 #' @param add.line.breaks if to add 2 line breaks after formula
+#' @param ... extra arguments passed by from parent call, disregarded
 #' @return By default this function outputs (see: \code{cat}) the result. If you would want to catch the result instead, then call the function ending in \code{.return}.
 #' @export
 #' @aliases pandoc.formula
 #' @examples
 #' pandoc.formula(y ~ x)
 #' pandoc.formula(formula(paste('y ~ ', paste0('x', 1:12, collapse = ' + '))))
-pandoc.formula.return <- function(x, text = NULL, max.width = 80, caption, add.line.breaks = FALSE){
+pandoc.formula.return <- function(x, text = NULL, max.width = 80, caption, add.line.breaks = FALSE, ...){
     mc  <- match.call()
     if (is.null(mc$caption)) {
         if (is.null(attr(t, 'caption'))) {
@@ -1393,6 +1422,7 @@ pandoc.formula <- function(...)
 #' @param x date or vector of dates
 #' @param inline if to render vector of dates as inline paragraph or not (as list)
 #' @param simplified if just add date formatting to vector of dates
+#' @param ... extra arguments passed by from parent call, disregarded
 #' @return By default this function outputs (see: \code{cat}) the result. If you would want to catch the result instead, then call the function ending in \code{.return}.
 #' @export
 #' @aliases pandoc.date
@@ -1400,7 +1430,7 @@ pandoc.formula <- function(...)
 #' pandoc.date(Sys.Date())
 #' pandoc.date(Sys.Date() - 1:10)
 #' pandoc.date(Sys.Date() - 1:10, inline = FALSE)
-pandoc.date.return <- function(x, inline = TRUE, simplified = FALSE){
+pandoc.date.return <- function(x, inline = TRUE, simplified = FALSE, ...){
     if (length(x) == 1 || simplified){
         format(x, format = panderOptions('date'))
     } else {

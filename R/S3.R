@@ -254,11 +254,10 @@ pander.data.table <- function(x, caption = attr(x, 'caption'),
     }
 
     requireNamespace('data.table', quietly = TRUE)
-    xx <- copy(x)
+    xx <- data.table::copy(x)
     if (keys.as.row.names && data.table::haskey(xx)) {
         firstkey <- data.table::key(xx)[1]
         row.names.dt <- as.character(xx[[firstkey]])
-##:ess-bp-start::browser@nil:##
         xx <- xx[, setdiff(colnames(xx), firstkey), with = FALSE, drop = FALSE]
         data.table::setattr(xx, 'row.names', row.names.dt)
     }
@@ -1017,13 +1016,13 @@ pander.ts <- function(x, caption = attr(x, 'caption'), ...) {
 #' @param x a formula object
 #' @param max.width maximum width in characters per line
 #' @param caption caption (string) to be shown under the formula
-#' @param ... optional parameters passed to raw \code{pandoc.table} function
+#' @param ... optional parameters passed to raw \code{pandoc.formula} function
 #' @export
 pander.formula <- function(x, max.width = 80, caption = attr(x, 'caption'), ...) {
     if (is.null(caption) & !is.null(storage$caption)) {
         caption <- get.caption()
     }
-    pandoc.formula(x, max.width = max.width, caption = caption)
+    pandoc.formula(x, max.width = max.width, caption = caption, ...)
 }
 
 

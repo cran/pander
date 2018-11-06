@@ -9,7 +9,7 @@ pandoc.table.return(t, caption, digits = panderOptions("digits"),
   decimal.mark = panderOptions("decimal.mark"),
   big.mark = panderOptions("big.mark"), round = panderOptions("round"),
   missing = panderOptions("missing"), justify, style = c("multiline",
-  "grid", "simple", "rmarkdown"),
+  "grid", "simple", "rmarkdown", "jira"),
   split.tables = panderOptions("table.split.table"),
   split.cells = panderOptions("table.split.cells"),
   keep.trailing.zeros = panderOptions("keep.trailing.zeros"),
@@ -51,7 +51,7 @@ pandoc.table.return(t, caption, digits = panderOptions("digits"),
 
 \item{plain.ascii}{(default: \code{FALSE}) if output should be in plain ascii (without markdown markup) or not}
 
-\item{use.hyphening}{boolean (default: \code{FALSE}) if try to use hyphening when splitting large cells according to table.split.cells. Requires koRpus package.}
+\item{use.hyphening}{boolean (default: \code{FALSE}) if try to use hyphening when splitting large cells according to table.split.cells. Requires \pkg{sylly}.}
 
 \item{row.names}{if \code{FALSE}, row names are suppressed. A character vector of row names can also be specified here. By default, row names are included if \code{rownames(t)} is neither
 \code{NULL} nor identical to \code{1:nrow(x)}}
