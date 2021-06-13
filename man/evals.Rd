@@ -4,27 +4,37 @@
 \alias{evals}
 \title{Evaluate and Process R Code}
 \usage{
-evals(txt, parse = evalsOptions("parse"),
+evals(
+  txt,
+  parse = evalsOptions("parse"),
   cache = evalsOptions("cache"),
   cache.mode = evalsOptions("cache.mode"),
   cache.dir = evalsOptions("cache.dir"),
   cache.time = evalsOptions("cache.time"),
   cache.copy.images = evalsOptions("cache.copy.images"),
-  showInvisible = FALSE, classes = evalsOptions("classes"),
-  hooks = evalsOptions("hooks"), length = evalsOptions("length"),
-  output = evalsOptions("output"), env = NULL,
+  showInvisible = FALSE,
+  classes = evalsOptions("classes"),
+  hooks = evalsOptions("hooks"),
+  length = evalsOptions("length"),
+  output = evalsOptions("output"),
+  env = NULL,
   graph.unify = evalsOptions("graph.unify"),
   graph.name = evalsOptions("graph.name"),
   graph.dir = evalsOptions("graph.dir"),
   graph.output = evalsOptions("graph.output"),
-  width = evalsOptions("width"), height = evalsOptions("height"),
-  res = evalsOptions("res"), hi.res = evalsOptions("hi.res"),
-  hi.res.width = evalsOptions("hi.res.width"), hi.res.height = 960 *
-  (height/width), hi.res.res = res * (hi.res.width/width),
+  width = evalsOptions("width"),
+  height = evalsOptions("height"),
+  res = evalsOptions("res"),
+  hi.res = evalsOptions("hi.res"),
+  hi.res.width = evalsOptions("hi.res.width"),
+  hi.res.height = 960 * (height/width),
+  hi.res.res = res * (hi.res.width/width),
   graph.env = evalsOptions("graph.env"),
   graph.recordplot = evalsOptions("graph.recordplot"),
-  graph.RDS = evalsOptions("graph.RDS"), log = evalsOptions("log"),
-  ...)
+  graph.RDS = evalsOptions("graph.RDS"),
+  log = evalsOptions("log"),
+  ...
+)
 }
 \arguments{
 \item{txt}{a character vector containing R code. This could be a list/vector of lines of code or a simple string holding R code separated by \code{;} or \code{\\n}.}
@@ -81,7 +91,7 @@ evals(txt, parse = evalsOptions("parse"),
 
 \item{graph.RDS}{save the raw R object returned (usually with \code{lattice} or \code{ggplot2}) while generating the plots to distinct files (based on \code{graph.name}) with \code{RDS} extension?}
 
-\item{log}{an optionally passed \emph{logger name} from \pkg{futile.logger} to record all info, trace, debug and error messages. Logging to the console can be done by specifying e.g. \code{flog.namespace()}, and log to a file by previously calling \code{flog.appender} and \code{appender.file} on the given \emph{logger name}.}
+\item{log}{an optionally passed \emph{namespace} for \pkg{logger} to record all info, trace, debug and error messages.}
 
 \item{...}{optional parameters passed to graphics device (e.g. \code{bg}, \code{pointsize} etc.)}
 }
@@ -323,12 +333,12 @@ x <- evals('1:10', log = 'foo')
 x <- evals('1:10', log = 'foo')
 # log to file
 t <- tempfile()
-flog.appender(appender.file(t), name = 'evals')
+log_appender(appender_file(t), name = 'evals')
 x <- evals('1:10', log = 'evals')
 readLines(t)
 # permanent log for all events
 evalsOptions('log', 'evals')
-flog.threshold(TRACE, 'evals')
+log_threshold(TRACE, 'evals')
 evals('foo')
 }
 }

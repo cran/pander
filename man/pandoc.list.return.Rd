@@ -5,9 +5,16 @@
 \alias{pandoc.list}
 \title{Create a list}
 \usage{
-pandoc.list.return(elements, style = c("bullet", "ordered", "roman"),
-  loose = FALSE, add.line.breaks = TRUE, add.end.of.list = TRUE,
-  indent.level = 0, missing = panderOptions("missing"), ...)
+pandoc.list.return(
+  elements,
+  style = c("bullet", "ordered", "roman"),
+  loose = FALSE,
+  add.line.breaks = TRUE,
+  add.end.of.list = TRUE,
+  indent.level = 0,
+  missing = panderOptions("missing"),
+  ...
+)
 }
 \arguments{
 \item{elements}{character vector of strings}
@@ -55,5 +62,5 @@ pandoc.list(list('one', list('two')))
 pandoc.list(list('one', list(2:3)))
 }
 \references{
-John MacFarlane (2012): _Pandoc User's Guide_. \url{http://johnmacfarlane.net/pandoc/README.html}
+John MacFarlane (2012): _Pandoc User's Guide_. \url{https://johnmacfarlane.net/pandoc/README.html}
 }

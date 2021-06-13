@@ -4,16 +4,24 @@
 \alias{Pandoc.convert}
 \title{Converts Pandoc to other format}
 \usage{
-Pandoc.convert(f, text, format = "html", open = TRUE, options = "",
-  footer = FALSE, proc.time, portable.html = TRUE,
-  pandoc.binary = panderOptions("pandoc.binary"))
+Pandoc.convert(
+  f,
+  text,
+  format = "html",
+  open = TRUE,
+  options = "",
+  footer = FALSE,
+  proc.time,
+  portable.html = TRUE,
+  pandoc.binary = panderOptions("pandoc.binary")
+)
 }
 \arguments{
 \item{f}{Pandoc's markdown format file path. If URL is provided then the generated file's path is \code{tempfile()} but please bear in mind that this way only images with absolute path would shown up in the document.}
 
 \item{text}{Pandoc's markdown format character vector. Treated as the content of \code{f} file - so the \code{f} parameter is ignored. The generated file's path is \code{tempfile()}.}
 
-\item{format}{required output format. For all possible values here check out Pandoc homepage: \url{http://johnmacfarlane.net/pandoc/}}
+\item{format}{required output format. For all possible values here check out Pandoc homepage: \url{https://johnmacfarlane.net/pandoc/}}
 
 \item{open}{try to open converted document with operating system's default program}
 
@@ -25,7 +33,7 @@ Pandoc.convert(f, text, format = "html", open = TRUE, options = "",
 
 \item{portable.html}{instead of using local files, rather linking JS/CSS files to an online CDN for portability and including base64-encoded images if converting to \code{HTML} without custom \code{options}}
 
-\item{pandoc.binary}{path to \code{pandoc}'s binary if not found in the path}
+\item{pandoc.binary}{custom path to \code{pandoc}'s binary if not found in the path or not set in the \code{RSTUDIO_PANDOC} env var}
 }
 \value{
 Converted file's path.
@@ -39,7 +47,7 @@ This function depends on \code{Pandoc} which should be pre-installed on user's m
 \examples{
 \dontrun{
 Pandoc.convert(text = c('# Demo', 'with a paragraph'))
-Pandoc.convert('http://rapporter.github.io/pander/minimal.md')
+Pandoc.convert('https://rapporter.github.io/pander/minimal.md')
 # Note: the generated HTML is not showing images with relative path from the above file.
 # Based on that `pdf`, `docx` etc. formats would not work! If you want to convert an
 # online markdown file to other formats with this function, please pre-process the file
@@ -47,5 +55,5 @@ Pandoc.convert('http://rapporter.github.io/pander/minimal.md')
 }
 }
 \references{
-John MacFarlane (2012): _Pandoc User's Guide_. \url{http://johnmacfarlane.net/pandoc/README.html}
+John MacFarlane (2012): _Pandoc User's Guide_. \url{https://johnmacfarlane.net/pandoc/README.html}
 }

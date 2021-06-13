@@ -4,9 +4,19 @@
 \alias{Pandoc.brew}
 \title{Brew in pandoc format}
 \usage{
-Pandoc.brew(file = stdin(), output = stdout(), convert = FALSE,
-  open = TRUE, graph.name, graph.dir, graph.hi.res = FALSE,
-  text = NULL, envir = parent.frame(), append = FALSE, ...)
+Pandoc.brew(
+  file = stdin(),
+  output = stdout(),
+  convert = FALSE,
+  open = TRUE,
+  graph.name,
+  graph.dir,
+  graph.hi.res = FALSE,
+  text = NULL,
+  envir = parent.frame(),
+  append = FALSE,
+  ...
+)
 }
 \arguments{
 \item{file}{file path of the brew template. As this is passed to \code{readLines}, \code{file} could be an URL too, but not over SSL (for that latter \code{RCurl} would be needed).}
@@ -46,7 +56,7 @@ This parser tries to be smart in some ways:
      \item all warnings/messages and errors are recorded in the blocks and returned in the document as a footnote
 }
 
-Please see my Github page for details (\url{http://rapporter.github.com/pander/#brew-to-pandoc}) and examples (\url{http://rapporter.github.com/pander/#examples}).
+Please see my Github page for details (\url{https://rapporter.github.io/pander/#brew-to-pandoc}) and examples (\url{https://rapporter.github.io/pander/#examples}).
 }
 \note{
 Only one of the input parameters (\code{file} or \code{text}) is to be used at once!
@@ -54,15 +64,15 @@ Only one of the input parameters (\code{file} or \code{text}) is to be used at o
 \examples{
 \dontrun{
 text <- paste('# Header', '',
-  'What a lovely list:\\n<\%=as.list(runif(10))\%>',
-  'A wide table:\\n<\%=mtcars[1:3, ]\%>',
-  'And a nice chart:\\n\\n<\%=plot(1:10)\%>', sep = '\\n')
+  'What a lovely list:\n<\%=as.list(runif(10))\%>',
+  'A wide table:\n<\%=mtcars[1:3, ]\%>',
+  'And a nice chart:\n\n<\%=plot(1:10)\%>', sep = '\n')
 Pandoc.brew(text = text)
 Pandoc.brew(text = text, output = tempfile(), convert = 'html')
 Pandoc.brew(text = text, output = tempfile(), convert = 'pdf')
 
 ## pi is awesome
-Pandoc.brew(text='<\%for (i in 1:5) {\%>\\n Pi has a lot (<\%=i\%>) of power: <\%=pi^i\%><\%}\%>')
+Pandoc.brew(text='<\%for (i in 1:5) {\%>\n Pi has a lot (<\%=i\%>) of power: <\%=pi^i\%><\%}\%>')
 
 ## package bundled examples
 Pandoc.brew(system.file('examples/minimal.brew', package='pander'))
@@ -74,10 +84,10 @@ Pandoc.brew(system.file('examples/short-code-long-report.brew', package='pander'
 
 ## brew returning R objects
 str(Pandoc.brew(text='Pi equals to <\%=pi\%>.
-And here are some random data:\\n<\%=runif(10)\%>'))
+And here are some random data:\n<\%=runif(10)\%>'))
 
-str(Pandoc.brew(text='# Header <\%=1\%>\\nPi is <\%=pi\%> which is smaller then <\%=2\%>.
-foo\\nbar\\n <\%=3\%>\\n<\%=mtcars[1:2,]\%>'))
+str(Pandoc.brew(text='# Header <\%=1\%>\nPi is <\%=pi\%> which is smaller then <\%=2\%>.
+foo\nbar\n <\%=3\%>\n<\%=mtcars[1:2,]\%>'))
 
 str(Pandoc.brew(text='<\%for (i in 1:5) {\%>
 Pi has a lot (<\%=i\%>) of power: <\%=pi^i\%><\%}\%>'))
@@ -86,6 +96,6 @@ Pi has a lot (<\%=i\%>) of power: <\%=pi^i\%><\%}\%>'))
 \references{
 \itemize{
      \item Jeffrey Horner (2011). _brew: Templating Framework for Report Generation._ \url{https://cran.r-project.org/package=brew}
-     \item John MacFarlane (2012): _Pandoc User's Guide_. \url{http://johnmacfarlane.net/pandoc/README.html}
+     \item John MacFarlane (2012): _Pandoc User's Guide_. \url{https://johnmacfarlane.net/pandoc/README.html}
 }
 }

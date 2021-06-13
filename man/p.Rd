@@ -4,11 +4,17 @@
 \alias{p}
 \title{Inline Printing}
 \usage{
-p(x, wrap = panderOptions("p.wrap"), sep = panderOptions("p.sep"),
-  copula = panderOptions("p.copula"), limit = Inf,
+p(
+  x,
+  wrap = panderOptions("p.wrap"),
+  sep = panderOptions("p.sep"),
+  copula = panderOptions("p.copula"),
+  limit = Inf,
   keep.trailing.zeros = panderOptions("keep.trailing.zeros"),
-  missing = panderOptions("missing"), digits = panderOptions("digits"),
-  round = panderOptions("round"))
+  missing = panderOptions("missing"),
+  digits = panderOptions("digits"),
+  round = panderOptions("round")
+)
 }
 \arguments{
 \item{x}{an atomic vector to get merged for inline printing}
@@ -46,7 +52,7 @@ p(c('Thelma', 'Louise'), wrap = '', copula = '&')
 # [1] 'Thelma & Louise'
 }
 \references{
-This function was moved from \code{rapport} package: \url{http://rapport-package.info}.
+This function was moved from \code{rapport} package: \url{https://rapporter.github.io/rapport/}.
 }
 \author{
 Aleksandar Blagotic

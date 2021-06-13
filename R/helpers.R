@@ -60,7 +60,7 @@ repChar <- function(x, n, sep = '')
 #' # [1] 'Thelma & Louise'
 #' @export
 #' @author Aleksandar Blagotic
-#' @references This function was moved from \code{rapport} package: \url{http://rapport-package.info}.
+#' @references This function was moved from \code{rapport} package: \url{https://rapporter.github.io/rapport/}.
 p <- function(x, wrap = panderOptions('p.wrap'), sep = panderOptions('p.sep'), copula = panderOptions('p.copula'), limit = Inf, keep.trailing.zeros = panderOptions('keep.trailing.zeros'), missing = panderOptions('missing'), digits = panderOptions('digits'), round = panderOptions('round')){ #nolint
 
     attributes(x) <- NULL
@@ -117,7 +117,7 @@ p <- function(x, wrap = panderOptions('p.wrap'), sep = panderOptions('p.sep'), c
 #' }
 #' @export
 #' @author Aleksandar Blagotic
-#' @references This function was moved from \code{rapport} package: \url{http://rapport-package.info}.
+#' @references This function was moved from \code{rapport} package: \url{https://rapporter.github.io/rapport/}.
 wrap <- function(x, wrap = '"'){
     attributes(x) <- NULL
     stopifnot(is.vector(x))
@@ -406,7 +406,7 @@ splitLine <- function(x, max.width = panderOptions('table.split.cells'), use.hyp
     }
     hyphen_f <- function(s)
         sylly::hyphen(s, hyph.pattern = 'en', quiet = TRUE)@hyphen[1, 2]
-    .Call('pander_splitLine_cpp', PACKAGE = 'pander', x, max.width, use.hyphening, hyphen_f)
+    splitLine_cpp(x, max.width, use.hyphening, hyphen_f)
 }
 
 
@@ -500,4 +500,29 @@ coef_mat <- function(obj, coefs) {
         rownames(U)[nrow(U)] <- '. . .'
     }
     U
+}
+
+
+#' Find path to the pandoc binary by checking the \code{PATH} and the \code{RSTUDIO_PANDOC} env vars
+#' @return file path
+#' @export
+path_to_pandoc <- function() {
+
+    ## check if pandoc can be found on the path
+    bin <- as.character(Sys.which('pandoc'))
+
+    ## check RStudio env var pointing to the bundled pandoc
+    if (Sys.getenv('RSTUDIO_PANDOC') != '') {
+        bin <- Sys.getenv('RSTUDIO_PANDOC')
+        bin <- file.path(bin, ifelse(
+            grepl('w|W', .Platform$OS.type),
+            ## we are on Windows
+            'pandoc.exe',
+            ## no extension on Mac and Linux
+            'pandoc'))
+    }
+
+    ## return whatever found
+    bin
+
 }
