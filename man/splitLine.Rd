@@ -11,9 +11,9 @@ splitLine(
 )
 }
 \arguments{
-\item{x}{string to be split. Works only with one string. Non-string arguments and multi-dimensional arguments are returned unchaged}
+\item{x}{string to be split. Works only with one string. Non-string arguments and multi-dimensional arguments are returned unchanged}
 
-\item{max.width}{default integer value specyfing max number of characters between line breaks}
+\item{max.width}{default integer value specifying max number of characters between line breaks}
 
 \item{use.hyphening}{(default: \code{FALSE}) if try to use hyphening when splitting large cells according to table.split.cells. Requires \pkg{sylly}.}
 }

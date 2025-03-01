@@ -5,6 +5,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // splitLine_cpp
 std::string splitLine_cpp(std::string str, int max_width, bool use_hyphening, Rcpp::Function hyphen);
 RcppExport SEXP _pander_splitLine_cpp(SEXP strSEXP, SEXP max_widthSEXP, SEXP use_hypheningSEXP, SEXP hyphenSEXP) {
